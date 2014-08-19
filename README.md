@@ -84,7 +84,6 @@ there are other optional variables that control arpanet behaviour:
  * ETCD_PEERPORT - the TCP port etcd peer connection should listen on (7001)
  * ETCD_PATH - the base path in etcd arpanet will keep state (/arpanet)
 
-
 arpanet will source these variables from:
 
 ```
@@ -106,7 +105,7 @@ $ arpanet master start --peers boot
 To boot the subsequent masters point them at the IP of the first:
 
 ```bash
-$ arpanet master start --peers 192.168.8.120
+$ arpanet master start --peers 192.168.8.120:7001
 ```
 
 The masters will now have formed an etcd mesh and any of them can be stopped without loss of service.

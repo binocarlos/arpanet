@@ -1,7 +1,4 @@
-.PHONY: image vagrant
+.PHONY: image vagrant install
 
-image:
-	docker build -t binocarlos/viking .
-
-vagrant:
-	usermod -aG docker vagrant
+install:
+	cp arpanet /usr/local/bin

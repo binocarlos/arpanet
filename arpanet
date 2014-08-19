@@ -8,7 +8,9 @@ readonly ETCD_IMAGE="coreos/etcd"
 readonly ETCDCTL_IMAGE="binocarlos/etcdctl"
 readonly SMESH_IMAGE="binocarlos/smesh"
 
-source ~/.arpanetrc
+if [ -f ~/.arpanetrc ]; then
+	source ~/.arpanetrc
+fi
 export DOCKER_URL=${DOCKER_URL:="https://get.docker.io/ubuntu/"}
 export DOCKER_PORT=${DOCKER_PORT:=2375}
 export ETCD_PORT=${ETCD_PORT:=4001}
@@ -30,19 +32,15 @@ check-environment(){
 		exit 1
 	fi
 	if [ -z $ARPANET_ETCD ]; then
-		IFS=',' read -a masters <<< "$VIKING_MASTERS"
-		VIKING_ETCD="${masters[0]}:$VIKING_ETCD_PORT"
+		IFS=',' read -a masters <<< "$ARPANET_MASTERS"
+		ARPANET_ETCD="${masters[0]}:$ETCD_PORT"
 	fi
-}
-
-docker-environment(){
-	echo "-e VIKING_IP=$VIKING_IP -e VIKING_ETCD=$VIKING_ETCD -e VIKING_MASTERS=$VIKING_MASTERS -e VIKING_MASTER_PORT=$VIKING_MASTER_PORT -e DOCKER_PORT=$DOCKER_PORT -e VIKING_ETCD_PATH=$VIKING_ETCD_PATH"
 }
 
 install-docker(){
 	curl -sSL $DOCKER_URL | sudo sh
 	sysctl -w net.ipv4.ip_forward=1
-	echo "DOCKER_OPTS='-H unix:///var/run/docker.sock -H tcp://$VIKING_IP:$DOCKER_PORT'" > /etc/default/docker
+	echo "DOCKER_OPTS='-H unix:///var/run/docker.sock -H tcp://$ARPANET_IP:$DOCKER_PORT'" > /etc/default/docker
 	service docker restart
 	sleep 2
 }
@@ -68,7 +66,7 @@ cmd-install() {
 	slave)              shift; install-slave $@;;
 	master)             shift; install-master $@;;
   *)
-		echo "usage: viking install <mode>"
+		echo "usage: arpanet install <mode>"
 	;;
 	esac
 }
@@ -169,8 +167,14 @@ cmd-etcdctl() {
 	docker run --rm -ti $ETCDCTL_IMAGE --peers $ARPANET_IP:$ETCD_PORT $@
 }
 
+cmd-hosts() {
+	check-environment
+	curl -L http://$ARPANET_ETCD/v2/keys/_etcd/machines
+}
+
 cmd-help() {
-echo <<EOF
+cat <<EOF
+
 Usage: arpanet COMMAND [options]
 
 Commands:
@@ -179,6 +183,8 @@ Commands:
   master     (start|stop)               Start|Stop the master
   slave      (start|stop)               Start|Stop the slave
   etcdctl                               Run etcdctl against the local master
+  hosts                                 etcd ls /_etcd/machines
+
 EOF
 }
 
@@ -188,6 +194,7 @@ main() {
 	master)             shift; cmd-master $@;;
 	slave)              shift; cmd-slave $@;;
 	etcdctl)            shift; cmd-etcdctl $@;;
+  hosts)              shift; cmd-hosts $@;;
 	*)                  cmd-help $@;;
 	esac
 }
