@@ -83,6 +83,9 @@ there are other optional variables that control arpanet behaviour:
  * ETCD_PORT - the TCP port etcd client connection should listen on (4001)
  * ETCD_PEERPORT - the TCP port etcd peer connection should listen on (7001)
  * ETCD_PATH - the base path in etcd arpanet will keep state (/arpanet)
+ * ETCD_NAME - the name of the etcd container (arpanet_etcd)
+ * AMBASSADOR_NAME - the name of the ambassador container (arpanet_backends)
+ * REGISTRATOR_NAME - the name of the registrator container (arpanet_registrator)
 
 arpanet will source these variables from:
 

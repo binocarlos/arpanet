@@ -16,6 +16,9 @@ export DOCKER_PORT=${DOCKER_PORT:=2375}
 export ETCD_PORT=${ETCD_PORT:=4001}
 export ETCD_PEERPORT=${ETCD_PEERPORT:=7001}
 export ETCD_PATH=${ETCD_PATH:="/arpanet"}
+export ETCD_NAME=${ETCD_NAME:="arpanet_etcd"}
+export AMBASSADOR_NAME=${AMBASSADOR_NAME:="arpanet_backends"}
+export REGISTRATOR_NAME=${REGISTRATOR_NAME:="arpanet_registrator"}
 
 # INSTALL
 check-environment(){
@@ -73,46 +76,46 @@ cmd-install() {
 
 start-registrator(){
 
-	running=$(docker ps | grep registrator)
+	running=$(docker ps | grep arpanet_registrator)
 	if [ -n "$running" ]; then
 		echo "arpanet registrator is already running"
 		exit 1
 	fi
 
 	docker run -d \
-		--name registrator \
+		--name $REGISTRATOR_NAME \
     -v /var/run/docker.sock:/tmp/docker.sock \
-    -h $HOSTNAME $REGISTRATOR_IMAGE -ip=$ARPANET_IP etcd://$ARPANET_ETCD:$ETCD_PORT$ETCD_PATH/network
+    -h $HOSTNAME $REGISTRATOR_IMAGE -ip=$ARPANET_IP etcd://$ARPANET_ETCD$ETCD_PATH/network
 }
 
 start-ambassadord(){
 
-	running=$(docker ps | grep backends)
+	running=$(docker ps | grep arpanet_backends)
 	if [ -n "$running" ]; then
 		echo "arpanet ambassadord is already running"
 		exit 1
 	fi
 
 	docker run -d \
-		--name backends \
+		--name $AMBASSADOR_NAME \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		$AMBASSADORD_IMAGE --omnimode
 
 	docker run --rm \
 		--privileged \
-		--net container:backends \
+		--net container:$AMBASSADOR_NAME \
 		$AMBASSADORD_IMAGE --setup-iptables
 
 }
 
 slave-start() {
-	start-registrator
 	start-ambassadord
+	start-registrator
 }
 
 slave-stop() {
-	docker stop registrator && docker rm registrator	
-	docker stop backends && docker rm backends
+	docker stop arpanet_registrator && docker rm arpanet_registrator
+	docker stop arpanet_backends && docker rm arpanet_backends
 }
 
 cmd-slave() {
@@ -136,11 +139,11 @@ etcd-start() {
 		echo "arpanet etcd is already running"
 		exit 1
 	fi
-	$(docker run --rm binocarlos/smesh start --name arpanetetcd --hostname $HOSTNAME --address $ARPANET_IP --port $ETCD_PORT --peerport $ETCD_PEERPORT --dockerargs="-e SERVICE_NAME=arpanetetcd" $@)
+	$(docker run --rm binocarlos/smesh start --name $ETCD_NAME --hostname $HOSTNAME --address $ARPANET_IP --port $ETCD_PORT --peerport $ETCD_PEERPORT --dockerargs="-e SERVICE_NAME=arpanet_etcd" $@)
 }
 
 etcd-stop() {
-	docker stop arpanetetcd && docker rm arpanetetcd	
+	docker stop arpanet_etcd && docker rm arpanet_etcd
 }
 
 master-start() {
