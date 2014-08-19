@@ -5,17 +5,44 @@ Auto linking multi-host docker cluster
 
 ![PDP-10](https://github.com/binocarlos/arpanet/raw/master/pdp-10.jpg)
 
+Arpanet is a wrapper around the following tools:
+
+ * [docker](https://www.docker.com/)
+ * [etcd](https://github.com/coreos/etcd)
+ * [ambassadord](https://github.com/progrium/ambassadord)
+ * [registrator](https://github.com/progrium/registrator)
+
 ## install
+
+First you must install arpanet itself:
 
 ```
 $ wget -qO- https://raw.github.com/binocarlos/arpanet/master/bootstrap.sh | sudo bash
 ```
 
+Then you must ensure your environment is setup (see below).
+
+Then install arpanet-core (which basically installs docker + binding it to tcp port):
+
+```
+$ sudo arpanet install core
+```
+
+Then depending if your node is a master, slave or both:
+
+```
+$ arpanet install master
+```
+
+```
+$ arpanet install slave
+```
+
 ## usage
 
-arpanet runs with `master` and `slave` nodes and a client that proxies docker client commands against the masters.
+arpanet runs with `master` and `slave` nodes.
 
-The masters route containers back to a choosen slave and will account for --links between containers with an auto-routing tcp proxy.
+The master nodes are etcd servers and the slave
 
 ## envrionment
 
@@ -47,6 +74,23 @@ A comma delimited list of at least 2 of the arpanet masters on the network (the 
 $ export ARPANET_MASTERS=192.168.8.120,192.168.8.121,192.168.8.122
 ```
 
+#### misc
+
+there are other optional variables that control arpanet behaviour:
+
+ * DOCKER_URL - the url of the script to install docker (https://get.docker.io/ubuntu/)
+ * DOCKER_PORT - the TCP port docker should listen on (2375)
+ * ETCD_PORT - the TCP port etcd client connection should listen on (4001)
+ * ETCD_PEERPORT - the TCP port etcd peer connection should listen on (7001)
+ * ETCD_PATH - the base path in etcd arpanet will keep state (/arpanet)
+
+
+arpanet will source these variables from:
+
+```
+~/.arpanetrc
+```
+
 ## master
 
 arpanet masters are etcd peers - one can go down and everything will still work.
@@ -67,6 +111,22 @@ $ arpanet master start --peers 192.168.8.120
 
 The masters will now have formed an etcd mesh and any of them can be stopped without loss of service.
 
+#### tokens
+
+You can also boot the arpanet masters using the etcd token service.
+
+First - get a token:
+
+```
+$ curl -L https://discovery.etcd.io/new
+```
+
+Then - pass the token that is printed to the masters start commands:
+
+```
+$ arpanet master start --token https://discovery.etcd.io/b34c47fbc5300409d8c4d557b40a5bce
+```
+
 ## slave
 
 To start a slave:
@@ -75,31 +135,9 @@ To start a slave:
 $ arpanet slave start
 ```
 
-## docker client
+This will boot [registrator](https://github.com/progrium/registrator) and [ambassadord](https://github.com/progrium/ambassadord) on the host and connect it up to the arpanet masters.
 
-The standard arpanet master port is 8791 and you can point the standard docker client at it:
-
-```bash
-$ docker -H tcp://192.168.8.120:8791 run --name test1 --rm binocarlos/bring-a-ping
-```
-
-You must give containers a name when you run them via the arpanet cluster - this is to ensure uniqueness across machines.
-
-You can docker ps and it will show containers across the whole cluster:
-
-```bash
-$ docker -H tcp://192.168.8.120:8791 ps
-```
-
-Container names are appended with @hostname
-
-Using the standard docker client - you must define links and volumes using envrionment variables:
-
-```bash
-$ docker -H tcp://192.168.8.120:8791 run --name test2 --rm -e ARPANET_LINK1=test1:test1 -e ARPANET_VOLUME1=/data binocarlos/bring-a-ping
-```
-
-This is because the routing is done based on the volumes and links and the standard client sends this with /container/start not /container/create
+I will write more about how to use this setup - in the meantime you can checkout the help for the 2 libraries above on github.
 
 ## license
 
