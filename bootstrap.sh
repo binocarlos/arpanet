@@ -13,6 +13,6 @@ apt-get update
 apt-get install -y git make curl
 
 cd ~ && test -d arpanet || git clone $ARPANET_REPO
-cd viking
+cd arpanet
 git fetch origin
 make install
