@@ -95,23 +95,19 @@ arpanet will source these variables from:
 
 ## master
 
-arpanet masters are etcd peers - one can go down and everything will still work.
-
-For this reason - you should run the arpanet master on at least 3 machines.
-
 To boot the first master:
 
 ```bash
 $ arpanet master start --peers boot
 ```
 
-To boot the subsequent masters point them at the IP of the first:
+To boot the subsequent masters point them at the IP and peer port of the first master:
 
 ```bash
 $ arpanet master start --peers 192.168.8.120:7001
 ```
 
-The masters will now have formed an etcd mesh and any of them can be stopped without loss of service.
+The masters will now have formed an etcd mesh.
 
 #### tokens
 
