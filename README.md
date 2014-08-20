@@ -16,7 +16,7 @@ Arpanet is a wrapper around the following tools:
 
 First you must install arpanet itself:
 
-```
+```bash
 $ wget -qO- https://raw.github.com/binocarlos/arpanet/master/bootstrap.sh | sudo bash
 ```
 
@@ -24,17 +24,17 @@ Then you must ensure your environment is setup (see below).
 
 Then install arpanet-core (which basically installs docker + binding it to tcp port):
 
-```
+```bash
 $ sudo arpanet install core
 ```
 
 Then depending if your node is a master, slave or both:
 
-```
+```bash
 $ arpanet install master
 ```
 
-```
+```bash
 $ arpanet install slave
 ```
 
