@@ -12,6 +12,7 @@ Arpanet is a wrapper around the following tools:
  * [ambassadord](https://github.com/progrium/ambassadord)
  * [registrator](https://github.com/progrium/registrator)
  * [fleetstreet](https://github.com/binocarlos/fleetstreet)
+ * [cadvisor](https://github.com/google/cadvisor)
 
 ## install
 
