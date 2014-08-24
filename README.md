@@ -11,6 +11,7 @@ Arpanet is a wrapper around the following tools:
  * [etcd](https://github.com/coreos/etcd)
  * [ambassadord](https://github.com/progrium/ambassadord)
  * [registrator](https://github.com/progrium/registrator)
+ * [fleetstreet](https://github.com/binocarlos/fleetstreet)
 
 ## install
 
