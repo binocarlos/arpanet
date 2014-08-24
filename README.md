@@ -88,6 +88,9 @@ there are other optional variables that control arpanet behaviour:
  * ETCD_NAME - the name of the etcd container (arpanet_etcd)
  * AMBASSADOR_NAME - the name of the ambassador container (arpanet_backends)
  * REGISTRATOR_NAME - the name of the registrator container (arpanet_registrator)
+ * FLEETSTREET_NAME - the name of the fleetstreet container (arpanet_fleetstreet)
+ * CADVISOR_NAME - the name of the cadvisor container (arpanet_cadvisor)
+ * CADVISOR_PORT - the port to expose for the cadvisor api (8080)
 
 arpanet will source these variables from:
 
