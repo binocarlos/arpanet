@@ -44,7 +44,7 @@ arpanet runs with `master` and `slave` nodes.
 
 The master nodes are etcd servers and the slave
 
-## envrionment
+## environment
 
 The variables you should set in your environment before running the arpanet master or slave:
 
