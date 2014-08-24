@@ -194,9 +194,10 @@ $ curl -L http://$ARPANET_ETCD/v2/keys/_etcd/machines
 
 ## big thank you to
 
+ * [Jeff Lindsay](https://github.com/progrium)
  * [the docker team](https://github.com/docker/docker/graphs/contributors)
  * [the coreos team](https://github.com/coreos/etcd/graphs/contributors)
- * [Jeff Lindsay](https://github.com/progrium)
+ 
 
 ## license
 

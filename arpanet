@@ -53,12 +53,16 @@ install-core() {
 }
 
 install-slave() {
+	sleep 1
 	docker pull $AMBASSADORD_IMAGE
+	sleep 1
 	docker pull $REGISTRATOR_IMAGE
 }
 
 install-master() {
+	sleep 1
 	docker pull $ETCD_IMAGE
+	sleep 1
 	docker pull $SMESH_IMAGE
 }
 
