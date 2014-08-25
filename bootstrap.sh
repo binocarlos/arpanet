@@ -15,4 +15,5 @@ apt-get install -y git make curl
 cd ~ && test -d arpanet || git clone $ARPANET_REPO
 cd arpanet
 git fetch origin
+git pull
 make install
