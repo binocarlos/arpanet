@@ -171,7 +171,7 @@ etcd-start() {
 		echo "arpanet etcd is already running"
 		exit 1
 	fi
-	$(docker run --rm binocarlos/smesh start --name $ETCD_NAME --hostname $HOSTNAME --address $ARPANET_IP --port $ETCD_PORT --peerport $ETCD_PEERPORT --dockerargs="-e SERVICE_4001_NAME=arpanet_etcd -e SERVICE_7001_NAME=arpanet_etcd_peer" $@)
+	$(docker run --rm binocarlos/smesh start --name $ETCD_NAME --hostname $HOSTNAME --address $ARPANET_IP --bind $ARPANET_IP --port $ETCD_PORT --peerport $ETCD_PEERPORT --dockerargs="-e SERVICE_4001_NAME=arpanet_etcd -e SERVICE_7001_NAME=arpanet_etcd_peer" $@)
 }
 
 etcd-stop() {
