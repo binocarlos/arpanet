@@ -77,7 +77,7 @@ install-master() {
 
 cmd-install() {
 	check-environment
-	case "$1" in	
+	case "$1" in
 	core)               shift; install-core $@;;
 	slave)              shift; install-slave $@;;
 	master)             shift; install-master $@;;
@@ -99,6 +99,7 @@ start-registrator(){
 	check-running "$REGISTRATOR_NAME.$HOSTNAME"
 	docker run -d \
 		--name "$REGISTRATOR_NAME.$HOSTNAME" \
+		-e "FLEETSTREET_NAME=$REGISTRATOR_NAME.$HOSTNAME" \
     -v /var/run/docker.sock:/tmp/docker.sock \
     -h $HOSTNAME $REGISTRATOR_IMAGE -ip=$ARPANET_IP etcd://$ARPANET_ETCD$ETCD_PATH/network
 }
@@ -107,6 +108,7 @@ start-fleetstreet(){
 	check-running "$FLEETSTREET_NAME.$HOSTNAME"
 	docker run -d \
 		--name "$FLEETSTREET_NAME.$HOSTNAME" \
+		-e "FLEETSTREET_NAME=$FLEETSTREET_NAME.$HOSTNAME" \
     -v /var/run/docker.sock:/var/run/docker.sock \
     -h $HOSTNAME $FLEETSTREET_IMAGE -ip=$ARPANET_IP etcd://$ARPANET_ETCD$ETCD_PATH/containers
 }
@@ -115,6 +117,7 @@ start-cadvisor(){
 	check-running "$CADVISOR_NAME.$HOSTNAME"
 	docker run -d \
 		--name "$CADVISOR_NAME.$HOSTNAME" \
+		-e "FLEETSTREET_NAME=$CADVISOR_NAME.$HOSTNAME" \
 		-v /var/run:/var/run:rw \
 		-v /sys:/sys:ro \
 		-v /var/lib/docker/:/var/lib/docker:ro \
@@ -126,6 +129,7 @@ start-ambassadord(){
 
 	docker run -d \
 		--name "$AMBASSADOR_NAME.$HOSTNAME" \
+		-e "FLEETSTREET_NAME=$AMBASSADOR_NAME.$HOSTNAME" \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		$AMBASSADORD_IMAGE --omnimode
 
@@ -171,7 +175,7 @@ etcd-start() {
 		echo "arpanet etcd is already running"
 		exit 1
 	fi
-	$(docker run --rm binocarlos/smesh start --name "$ETCD_NAME.$HOSTNAME" --hostname $HOSTNAME --address $ARPANET_IP --bind $ARPANET_IP --port $ETCD_PORT --peerport $ETCD_PEERPORT --dockerargs="-e SERVICE_4001_NAME=$ETCD_NAME -e SERVICE_7001_NAME=${ETCD_NAME}_peer" $@)
+	$(docker run --rm binocarlos/smesh start --name "$ETCD_NAME.$HOSTNAME" --hostname $HOSTNAME --address $ARPANET_IP --bind $ARPANET_IP --port $ETCD_PORT --peerport $ETCD_PEERPORT --dockerargs="-e FLEETSTREET_NAME=$REGISTRATOR_NAME.$HOSTNAME -e SERVICE_4001_NAME=$ETCD_NAME -e SERVICE_7001_NAME=${ETCD_NAME}_peer" $@)
 }
 
 etcd-stop() {
