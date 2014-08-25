@@ -96,7 +96,7 @@ check-running(){
 }
 
 start-registrator(){
-	check-running $REGISTRATOR_NAME
+	check-running "$REGISTRATOR_NAME.$HOSTNAME"
 	docker run -d \
 		--name "$REGISTRATOR_NAME.$HOSTNAME" \
     -v /var/run/docker.sock:/tmp/docker.sock \
@@ -104,7 +104,7 @@ start-registrator(){
 }
 
 start-fleetstreet(){
-	check-running $FLEETSTREET_NAME
+	check-running "$FLEETSTREET_NAME.$HOSTNAME"
 	docker run -d \
 		--name "$FLEETSTREET_NAME.$HOSTNAME" \
     -v /var/run/docker.sock:/var/run/docker.sock \
@@ -112,7 +112,7 @@ start-fleetstreet(){
 }
 
 start-cadvisor(){
-	check-running $CADVISOR_NAME
+	check-running "$CADVISOR_NAME.$HOSTNAME"
 	docker run -d \
 		--name "$CADVISOR_NAME.$HOSTNAME" \
 		-v /var/run:/var/run:rw \
@@ -122,7 +122,7 @@ start-cadvisor(){
 }
 
 start-ambassadord(){
-	check-running $AMBASSADOR_NAME
+	check-running "$AMBASSADOR_NAME.$HOSTNAME"
 
 	docker run -d \
 		--name "$AMBASSADOR_NAME.$HOSTNAME" \
@@ -166,7 +166,7 @@ etcd-start() {
 		echo "usage: arpanet master start --peers | --token [OPTIONS}"
 		exit 1
 	fi
-	running=$(docker ps | grep arpanetetcd)
+	running=$(docker ps | grep "$ETCD_NAME.$HOSTNAME")
 	if [ -n "$running" ]; then
 		echo "arpanet etcd is already running"
 		exit 1
