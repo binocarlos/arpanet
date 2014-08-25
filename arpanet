@@ -23,7 +23,7 @@ export AMBASSADOR_NAME=${AMBASSADOR_NAME:="arpanet_backends"}
 export REGISTRATOR_NAME=${REGISTRATOR_NAME:="arpanet_registrator"}
 export FLEETSTREET_NAME=${FLEETSTREET_NAME:="arpanet_fleetstreet"}
 export CADVISOR_NAME=${CADVISOR_NAME:="arpanet_cadvisor"}
-export CADVISOR_PORT=${CADVISOR_PORT:=8080}
+export CADVISOR_PORT=${CADVISOR_PORT:=8085}
 
 # INSTALL
 check-environment(){
@@ -118,6 +118,7 @@ start-cadvisor(){
 	docker run -d \
 		--name "$CADVISOR_NAME.$HOSTNAME" \
 		-e "FLEETSTREET_NAME=$CADVISOR_NAME.$HOSTNAME" \
+		-e "SERVICE_8080_NAME=$CADVISOR_NAME" \
 		-v /var/run:/var/run:rw \
 		-v /sys:/sys:ro \
 		-v /var/lib/docker/:/var/lib/docker:ro \
@@ -143,8 +144,9 @@ start-ambassadord(){
 slave-start() {
 	start-ambassadord
 	start-registrator
-	start-fleetstreet
 	start-cadvisor
+	sleep 1
+	start-fleetstreet
 }
 
 slave-stop() {
@@ -175,7 +177,7 @@ etcd-start() {
 		echo "arpanet etcd is already running"
 		exit 1
 	fi
-	$(docker run --rm binocarlos/smesh start --name "$ETCD_NAME.$HOSTNAME" --hostname $HOSTNAME --address $ARPANET_IP --bind $ARPANET_IP --port $ETCD_PORT --peerport $ETCD_PEERPORT --dockerargs="-e FLEETSTREET_NAME=$REGISTRATOR_NAME.$HOSTNAME -e SERVICE_4001_NAME=$ETCD_NAME -e SERVICE_7001_NAME=${ETCD_NAME}_peer" $@)
+	$(docker run --rm binocarlos/smesh start --name "$ETCD_NAME.$HOSTNAME" --hostname $HOSTNAME --address $ARPANET_IP --bind $ARPANET_IP --port $ETCD_PORT --peerport $ETCD_PEERPORT --dockerargs="-e FLEETSTREET_NAME=$ETCD_NAME.$HOSTNAME -e SERVICE_4001_NAME=$ETCD_NAME -e SERVICE_7001_NAME=${ETCD_NAME}_peer" $@)
 }
 
 etcd-stop() {
