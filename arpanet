@@ -122,7 +122,7 @@ start-cadvisor(){
 		-v /var/run:/var/run:rw \
 		-v /sys:/sys:ro \
 		-v /var/lib/docker/:/var/lib/docker:ro \
-		-p $CADVISOR_PORT:8080 $CADVISOR_IMAGE
+		-p $ARPANET_IP:$CADVISOR_PORT:8080 $CADVISOR_IMAGE
 }
 
 start-ambassadord(){
