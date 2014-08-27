@@ -110,7 +110,7 @@ start-fleetstreet(){
 		--name "$FLEETSTREET_NAME.$HOSTNAME" \
 		-e "FLEETSTREET_NAME=$FLEETSTREET_NAME.$HOSTNAME" \
     -v /var/run/docker.sock:/var/run/docker.sock \
-    -h $HOSTNAME $FLEETSTREET_IMAGE -ip=$ARPANET_IP etcd://$ARPANET_ETCD$ETCD_PATH/containers
+    -h $HOSTNAME $FLEETSTREET_IMAGE -ip=$ARPANET_IP -ensure etcd://$ARPANET_ETCD$ETCD_PATH/containers
 }
 
 start-cadvisor(){
