@@ -7,12 +7,12 @@ Auto linking multi-host docker cluster
 
 Arpanet is a wrapper around the following tools:
 
- * [docker](https://www.docker.com/)
- * [etcd](https://github.com/coreos/etcd)
+ * [docker](https://github.com/docker/docker)
+ * [consul](https://github.com/hashicorp/consul)
+ * [cadvisor](https://github.com/google/cadvisor)
  * [ambassadord](https://github.com/progrium/ambassadord)
  * [registrator](https://github.com/progrium/registrator)
  * [fleetstreet](https://github.com/binocarlos/fleetstreet)
- * [cadvisor](https://github.com/google/cadvisor)
 
 ## install
 
