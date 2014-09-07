@@ -27,10 +27,8 @@ done
 
 # if we are developing we want the script to mount into the container
 mountscript=""
-if [[ -z $ARPANET_DEV ]]; then
-	mountscript="-v /srv/projects/arpanet/arpanet:/bin/arpanet"
+if [[ -d $ARPANET_DEV ]]; then
+	mountscript="-v $ARPANET_DEV/arpanet:/bin/arpanet"
 fi
 
-echo $dockervars
-
-#docker run --rm -ti -h $HOSTNAME -v /var/run/docker.sock:/var/run/docker.sock -e ARPANET_IP -e HOSTNAME $mountscript binocarlos/arpanet $@
+docker run --rm -ti -h $HOSTNAME -v /var/run/docker.sock:/var/run/docker.sock $dockervars $mountscript binocarlos/arpanet $@
