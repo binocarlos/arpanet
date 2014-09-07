@@ -1,47 +1,43 @@
 #!/bin/bash
 
+# change ambassadord to progrium when updated
+export CONSUL_IMAGE=${ETCD_IMAGE:="progrium/docker-consul"}
+export CADVISOR_IMAGE=${CADVISOR_IMAGE:="google/cadvisor"}
+export AMBASSADORD_IMAGE=${AMBASSADORD_IMAGE:="binocarlos/ambassadord"}
 export REGISTRATOR_IMAGE=${REGISTRATOR_IMAGE:="progrium/registrator"}
 export FLEETSTREET_IMAGE=${FLEETSTREET_IMAGE:="binocarlos/fleetstreet"}
-export CADVISOR_IMAGE=${CADVISOR_IMAGE:="google/cadvisor"}
-export CONSUL_IMAGE=${ETCD_IMAGE:="progrium/docker-consul"}
-
-# change this back to progrium/ once builds are current there
-export AMBASSADORD_IMAGE=${AMBASSADORD_IMAGE:="binocarlos/ambassadord"}
-
-export DOCKER_PORT=${DOCKER_PORT:=2375}
-export KV_PATH=${KV_PATH:="/arpanet"}
 
 export CONSUL_NAME=${CONSUL_NAME:="arpanet_consul"}
+export CADVISOR_NAME=${CADVISOR_NAME:="arpanet_cadvisor"}
 export AMBASSADOR_NAME=${AMBASSADOR_NAME:="arpanet_backends"}
 export REGISTRATOR_NAME=${REGISTRATOR_NAME:="arpanet_registrator"}
 export FLEETSTREET_NAME=${FLEETSTREET_NAME:="arpanet_fleetstreet"}
-export CADVISOR_NAME=${CADVISOR_NAME:="arpanet_cadvisor"}
-export CADVISOR_PORT=${CADVISOR_PORT:=8085}
+
+export DOCKER_PORT=${DOCKER_PORT:=2375}
+export CADVISOR_PORT=${CADVISOR_PORT:=8080}
+export CONSUL_PORT=${CONSUL_PORT:=8500}
+export CONSUL_EXPECT=${CONSUL_EXPECT:=3}
+export CONSUL_DATA=${CONSUL_DATA:=/mnt/arpanet-consul}
+export CONSUL_KV_PATH=${CONSUL_KV_PATH:=/arpanet}
 
 # INSTALL
 check-environment(){
-	echoopen=""
-	echoclose=""
-	if [[ "$1" == "echo" ]]; then
-		echoopen="eval echo\""
-		echoclose="\""
-	fi
-
 	if [ -z $HOSTNAME ]; then
-		echo "$echoopen HOSTNAME variable needed $echoclose"
+		echo "HOSTNAME variable needed"
 		exit 1
 	fi
 	if [ -z $ARPANET_IP ]; then
-		echo "$echoopen ARPANET_IP variable needed $echoclose"
+		echo "ARPANET_IP variable needed"
 		exit 1
 	fi
 }
 
-cmd-install(){
-check-environment
-cat <<EOF
-eval echo "DOCKER_OPTS='-H unix:///var/run/docker.sock -H tcp://$ARPANET_IP:$DOCKER_PORT --dns 172.17.42.1 --dns 8.8.8.8 --dns-search service.consul'" > /etc/default/docker && service docker restart
-EOF
+cmd-opts(){
+	if [[ "$1" == "docker" ]]; then
+		echo "-H unix:///var/run/docker.sock -H tcp://$ARPANET_IP:$DOCKER_PORT --dns 172.17.42.1 --dns 8.8.8.8 --dns-search service.consul"
+	elif [[ "$1" == "data" ]]; then
+		echo $CONSUL_DATA
+	fi
 }
 
 cmd-pull() {
@@ -67,35 +63,49 @@ check-running(){
 }
 
 start-consul(){
+	local mode="$1"; shift
+	local joinip="$1"; shift
 	local servicename="$CONSUL_NAME.$HOSTNAME"
 	check-running $servicename
+	bridge_ip=$(ip ro | awk '/^default/{print $3}')
+	consul_args=""
 
-	#docker run -d \
-	#	--name "$servicename" \
-	#	-e "FLEETSTREET_NAME=$servicename" \
-  #  -v /var/run/docker.sock:/tmp/docker.sock \
-  #  -h $HOSTNAME $REGISTRATOR_IMAGE -ip=$ARPANET_IP consul://$ARPANET_IP:8500
-}
+	if [[ -n $mode ]]; then
+		>&2 echo "usage: arpanet start boot|master|slave [JOINIP]"
+		exit 1
+	fi
 
-start-registrator(){
-	local servicename="$REGISTRATOR_NAME.$HOSTNAME"
+	if [[ "$mode" == "boot" ]]; then
+		if [[ -n $joinip ]]; then
+			>&2 echo "boot mode does not take a JOINIP"
+			exit 1
+		fi
+		consul_args="-bootstrap-expect $CONSUL_EXPECT"
+	elif [[ "$mode" == "master" ]]; then
+		if [[ -n $joinip ]]; then
+			>&2 echo "master mode needs a JOINIP"
+			exit 1
+		fi
+		consul_args="-server -join $join_ip"
+	else
+		if [[ -n $joinip ]]; then
+			>&2 echo "slave mode needs a JOINIP"
+			exit 1
+		fi
+		consul_args="-join $join_ip"
+	fi
 
-
-	docker run -d \
-		--name "$servicename" \
-		-e "FLEETSTREET_NAME=$servicename" \
-    -v /var/run/docker.sock:/tmp/docker.sock \
-    -h $HOSTNAME $REGISTRATOR_IMAGE -ip=$ARPANET_IP consul://$ARPANET_IP:8500
-}
-
-start-fleetstreet(){
-	local servicename="$FLEETSTREET_NAME.$HOSTNAME"
-	check-running $servicename
-	docker run -d \
-		--name "$servicename" \
-		-e "FLEETSTREET_NAME=$servicename" \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    -h $HOSTNAME $FLEETSTREET_IMAGE -ip=$ARPANET_IP -ensure consul://$ARPANET_IP$KV_PATH/containers
+	docker run --name $servicename -h $HOSTNAME \
+		-v $CONSUL_DATA:/data \
+		-p $ARPANET_IP:8300:8300 \
+		-p $ARPANET_IP:8301:8301 \
+		-p $ARPANET_IP:8301:8301/udp \
+		-p $ARPANET_IP:8302:8302 \
+		-p $ARPANET_IP:8302:8302/udp \
+		-p $ARPANET_IP:8400:8400 \
+		-p $ARPANET_IP:$CONSUL_PORT:8500 \
+		-p $bridge_ip:53:53/udp \
+		$CONSUL_IMAGE -advertise $ARPANET_IP $consul_args
 }
 
 start-cadvisor(){
@@ -110,6 +120,17 @@ start-cadvisor(){
 		-v /var/lib/docker/:/var/lib/docker:ro \
 		-p $ARPANET_IP:$CADVISOR_PORT:8080 $CADVISOR_IMAGE
 }
+
+
+start-registrator(){
+	local servicename="$REGISTRATOR_NAME.$HOSTNAME"
+	docker run -d \
+		--name "$servicename" \
+		-e "FLEETSTREET_NAME=$servicename" \
+    -v /var/run/docker.sock:/tmp/docker.sock \
+    -h $HOSTNAME $REGISTRATOR_IMAGE -ip=$ARPANET_IP consul://$ARPANET_IP:$CONSUL_PORT
+}
+
 
 start-ambassadord(){
 	local servicename="$AMBASSADOR_NAME.$HOSTNAME"
@@ -127,15 +148,25 @@ start-ambassadord(){
 
 }
 
+start-fleetstreet(){
+	local servicename="$FLEETSTREET_NAME.$HOSTNAME"
+	check-running $servicename
+	docker run -d \
+		--name "$servicename" \
+		-e "FLEETSTREET_NAME=$servicename" \
+    -v /var/run/docker.sock:/var/run/docker.sock \
+    -h $HOSTNAME $FLEETSTREET_IMAGE -ip=$ARPANET_IP -ensure consul://$ARPANET_IP:$CONSUL_PORT$CONSUL_KV_PATH/containers
+}
+
 cmd-start() {
 	check-environment
 	start-consul $@
-	sleep 1
-	start-ambassadord
-	start-registrator
-	start-cadvisor
-	sleep 1
-	start-fleetstreet
+	#sleep 1
+	#start-ambassadord
+	#start-registrator
+	#start-cadvisor
+	#sleep 1
+	#start-fleetstreet
 }
 
 cmd-stop() {
@@ -155,15 +186,16 @@ Commands:
 
   setup                                 Setup docker for use with arpanet
   pull                                  Pull the required docker images
-  start      (master|slave)             Start arpanet
+  start boot|master|slave [JOINIP]      Start arpanet
   stop                                  Stop arpanet
+  help                                  Show this message
 
 EOF
 }
 
 main() {
 	case "$1" in
-	install)            shift; cmd-install $@;;
+	opts)               shift; cmd-opts $@;;
   pull)               shift; cmd-pull $@;;
 	start)              shift; cmd-start $@;;
 	stop)               shift; cmd-stop $@;;

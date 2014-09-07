@@ -16,15 +16,46 @@ Arpanet is a wrapper around the following tools:
 
 ## install
 
-#### 1. install docker
+The quickstart list of commands:
 
-First (if you have not) - install docker:
+### quickstart install
+
+```
+$ export ARPANET_IP=192.168.8.120
+$ curl -sSL https://get.docker.io/ubuntu/ | sudo sh
+$ sudo sh -c 'curl -L https://raw.githbusercontent.com/binocarlos/arpanet/v0.2.4/wrapper > /usr/local/bin/arpanet'
+$ sudo chmod a+x /usr/local/bin/arpanet
+$ sudo -E arpanet setup
+$ arpanet pull
+```
+
+### installation steps
+
+#### 1. environment
+
+The variables you should set in your environment before running the arpanet container:
+
+##### `HOSTNAME`
+
+Make sure the hostname of the machine is set correctly and is different to other hostnames on your arpanet.
+
+##### `ARPANET_IP`
+
+The IP address of the interface to use for cross host communication.
+
+This should be the IP of a private network on the host.
+
+```bash
+$ export ARPANET_IP=192.168.8.120
+```
+
+#### 2. install docker
 
 ```bash
 $ curl -sSL https://get.docker.io/ubuntu/ | sudo sh
 ```
 
-#### 2. wrapper
+#### 3. install wrapper
 
 Arpanet runs in a docker container that starts and stops containers on the main docker host.
 
@@ -37,49 +68,20 @@ $ curl -L https://raw.githubusercontent.com/binocarlos/arpanet/v0.2.4/wrapper > 
 $ chmod a+x /usr/local/bin/arpanet
 ```
 
-Or with sudo:
+#### 4. pull image
 
-```bash
-$ sudo sh -c 'curl -L https://raw.githubusercontent.com/binocarlos/arpanet/v0.2.4/wrapper > /usr/local/bin/arpanet'
-$ sudo chmod a+x /usr/local/bin/arpanet
-```
-
-#### 3. pull image
-
-Next - pull the arpanet image:
+Next - pull the arpanet image (optional - it will pull automatically in the next step):
 
 ```bash
 $ docker pull binocarlos/arpanet
 ```
 
-#### 4. environment
+#### 5. setup
 
-The variables you should set in your environment before running the arpanet container:
-
-##### `HOSTNAME`
-
-Make sure the hostname of the machine is set correctly and is different to other hostnames on your arpanet.
+Run the setup command as root - it will create the data folder, configure the docker DNS bridge and bind it to the ARPANET_IP tcp endpoint:
 
 ```bash
-$ export HOSTNAME=host1
-```
-
-##### `ARPANET_IP`
-
-The IP address of the interface to use for cross host communication.
-
-This should be the IP of the private network of each host.
-
-```bash
-$ export ARPANET_IP=192.168.8.120
-```
-
-#### 5. setup docker
-
-Run the setup command as root - it will configure docker DNS and bind it to the ARPANET_IP tcp endpoint (as well as the UNIX socket):
-
-```bash
-$ sudo $(arpanet setup)
+$ sudo -E $(arpanet setup)
 ```
 
 #### 6. pull service images
@@ -90,16 +92,115 @@ Finally pull the docker images for the various services:
 $ arpanet pull
 ```
 
+Everything is now installed - you can `arpanet start` and `arpanet stop`
+
+
+## run
+
+```
+Usage: arpanet COMMAND [options]
+
+Commands:
+
+  setup                                 Setup docker for use with arpanet
+  pull                                  Pull the required docker images
+  start boot|master|slave [JOINIP]      Start arpanet
+  stop                                  Stop arpanet
+```
+
+The arpanet script runs in a docker container - this means the docker socket must be mounted as a volume each time we run.
+
+The wrapper script (installed to /usr/local/bin) will handle this for you.
+
+Or, if you want to run arpanet manually - here is an example of pretty much what the wrapper script does:
+
+```bash
+$ docker run --rm \
+	-h $HOSTNAME \
+	-v /var/run/docker.sock:/var/run/docker.sock \
+	-e ARPANET_IP \
+	binocarlos/arpanet help
+```
+
+## api
+
+#### `arpanet setup`
+
+Echo's a command to run on the host that will configure docker to listen on the private network TCP socket and to hook up the consul DNS.
+
+This is designed to be run in a sub-shell as follows:
+
+```bash
+$ sudo -E $(arpanet setup)
+```
+
+An example of what the setup command would print without wrapping a subshell:
+
+```bash
+eval echo "DOCKER_OPTS='-H unix:///var/run/docker.sock \
+  -H tcp://192.168.8.120:2375 --dns 172.17.42.1 --dns 8.8.8.8 \
+  --dns-search service.consul'" > /etc/default/docker \
+  && service docker restart && mkdir -p /mnt/arpanet-consul
+```
+
+#### `arpanet pull`
+
+This will pull the images used by arpanet services.
+
+#### `arpanet start boot|master|slave [JOINIP]`
+
+Start the arpanet containers on this host.
+
+There are 3 modes to boot a node:
+
+ * boot - used for the very first node
+ * master - used for other masters (consul server)
+ * slave - used for other nodes (consul agent)
+
+#### `arpanet stop`
+
+Stop the arpanet containers.
+
+## booting a cluster
+
+To boot a cluster of 5 nodes, with 3 servers:
+
+First stash the ip of the first node:
+
+```bash
+$ export JOINIP=192.168.8.120
+```
+
+Then boot the first node:
+
+```bash
+$ arpanet start boot
+```
+
+Now - boot the other 2 masters:
+
+```
+$ ssh node2 arpanet start master $JOINIP
+$ ssh node3 arpanet start master $JOINIP
+```
+
+Then finally the 2 other slaves:
+
+```
+$ ssh node4 arpanet start slave $JOINIP
+$ ssh node5 arpanet start slave $JOINIP
+```
+
 ## config
 
-there are other optional variables that control arpanet behaviour:
+there are other environment variables that control arpanet behaviour:
 
- * DOCKER_URL - the url of the script to install docker (https://get.docker.io/ubuntu/)
  * DOCKER_PORT - the TCP port docker should listen on (2375)
- * ETCD_PORT - the TCP port etcd client connection should listen on (4001)
- * ETCD_PEERPORT - the TCP port etcd peer connection should listen on (7001)
- * ETCD_PATH - the base path in etcd arpanet will keep state (/arpanet)
  * CADVISOR_PORT - the port to expose for the cadvisor api (8080)
+ * CONSUL_PORT - the port to expose the consul HTTP api (8500)
+ * CONSUL_EXPECT - the number of server nodes to auto bootstrap (3)
+ * CONSUL_DATA - the host folder to mount for consul state (/mnt/arpanet-consul)
+ * CONSUL_KV_PATH - the Key/Value path to use to keep state (/arpanet)
 
 You can control the images used by arpanet services using the following variables:
 
@@ -111,119 +212,29 @@ You can control the images used by arpanet services using the following variable
 
 You can control the names of the launched services using the following variables:
 
- * CONSUL_NAME - the name of the etcd container (arpanet_etcd)
- * AMBASSADOR_NAME - the name of the ambassador container (arpanet_backends)
- * REGISTRATOR_NAME - the name of the registrator container (arpanet_registrator)
- * FLEETSTREET_NAME - the name of the fleetstreet container (arpanet_fleetstreet)
- * CADVISOR_NAME - the name of the cadvisor container (arpanet_cadvisor)
- 
+ * CONSUL_NAME (arpanet_consul)
+ * CADVISOR_NAME (arpanet_cadvisor)
+ * REGISTRATOR_NAME (arpanet_registrator)
+ * AMBASSADOR_NAME (arpanet_backends)
+ * FLEETSTREET_NAME (arpanet_fleetstreet)
 
-arpanet will source these variables from:
+The wrapper will source these variables from `~/.arpanetrc` and will inject them all into the arpanet docker container.
 
-```bash
-~/.arpanetrc
-```
+If you are running arpanet manually then pass these variables to docker using `-e CONSUL_NAME=...`.
 
-## run
+## security
 
-## master
+At present $ARPANET_IP is expected to reside on a private network.
 
-To boot the first master:
+This prevents the multi data-centre approach for consul.
 
-```bash
-$ arpanet master start --peers boot
-```
+It is recommended that you use iptables to secure access between arpanet nodes preventing other servers on the private network gaining access to your nodes.
 
-To boot the subsequent masters point them at the IP and peer port of the first master:
+Future versions of arpanet will include TLS encryption and multi data-center support (as consul allows this).
 
-```bash
-$ arpanet master start --peers 192.168.8.120:7001
-```
+## wishlist
 
-The masters will now have formed an etcd mesh.
-
-#### tokens
-
-You can also boot the arpanet masters using the etcd token service.
-
-First - get a token:
-
-```bash
-$ curl -L https://discovery.etcd.io/new
-```
-
-Then - pass the token that is printed to the masters start commands:
-
-```bash
-$ arpanet master start --token https://discovery.etcd.io/b34c47fbc5300409d8c4d557b40a5bce
-```
-
-## slave
-
-To start a slave:
-
-```bash
-$ arpanet slave start
-```
-
-This will boot [registrator](https://github.com/progrium/registrator) and [ambassadord](https://github.com/progrium/ambassadord) on the host and connect it up to the arpanet masters.
-
-I will write more about how to use this setup - in the meantime you can checkout the help for the 2 libraries above on github.
-
-## api
-
-#### `arpanet install (core|master|slave)`
-
-Install the components needed for the various roles - core must be installed before master or slave
-
-#### `arpanet master start --peers boot`
-
-Use this to boot the first arpanet master
-
-#### `arpanet master start --peers <etcdpeers>`
-
-Use this to boot subsequent arpanet masters.
-
---peers is a single or comma-delimited list of etcd peers
-
-```bash
-arpanet master start --peers 192.168.8.120:7001,192.168.8.121:7001,192.168.8.122:7001
-```
-
-#### `arpanet master start --token <etcdtoken>`
-
-Use this to boot an arpanet master with an etcd token.
-
-```bash
-$ ETCDTOKEN=$(curl -L https://discovery.etcd.io/new)
-$ arpanet master start --token $ETCDTOKEN
-```
-
-#### `arpanet master stop`
-
-Stop the master
-
-#### `arpanet slave start`
-
-Start the ambassador and registrator containers
-
-#### `arpanet slave stop`
-
-Stop the ambassador and registrator containers
-
-#### `arpanet etcdctl ls / --recursive`
-
-Run this from an arpanet master to query the etcd keys
-
-#### `arpanet hosts`
-
-Run this from any arpanet node to get a JSON dump of current masters.
-
-This is generated by:
-
-```bash
-$ curl -L http://$ARPANET_ETCD/v2/keys/_etcd/machines
-```
+ * TLS encryption between consul nodes & for docker server
 
 ## big thank you to
 
