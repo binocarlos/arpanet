@@ -16,41 +16,47 @@ Arpanet is a wrapper around the following tools:
 
 ## install
 
-First you must install arpanet itself:
+#### 1. install docker
+
+First (if you have not) - install docker:
 
 ```bash
-$ wget -qO- https://raw.github.com/binocarlos/arpanet/master/bootstrap.sh | sudo bash
+$ curl -sSL https://get.docker.io/ubuntu/ | sudo sh
 ```
 
-Then you must ensure your environment is setup (see below).
+#### 2. wrapper
 
-Then install arpanet-core (which basically installs docker + binding it to tcp port):
+Arpanet runs in a docker container that starts and stops containers on the main docker host.
+
+Because of this, the container must be run with the docker socket mounted as a volume.
+
+There is a wrapper script that will handle this neatly - to install the wrapper:
 
 ```bash
-$ sudo arpanet install core
+$ curl -L https://raw.githubusercontent.com/binocarlos/arpanet/v0.2.4/wrapper > /usr/local/bin/arpanet
+$ chmod a+x /usr/local/bin/arpanet
 ```
 
-Then depending if your node is a master, slave or both:
+Or with sudo:
 
 ```bash
-$ arpanet install master
+$ sudo sh -c 'curl -L https://raw.githubusercontent.com/binocarlos/arpanet/v0.2.4/wrapper > /usr/local/bin/arpanet'
+$ sudo chmod a+x /usr/local/bin/arpanet
 ```
+
+#### 3. pull image
+
+Next - pull the arpanet image:
 
 ```bash
-$ arpanet install slave
+$ docker pull binocarlos/arpanet
 ```
 
-## usage
+#### 4. environment
 
-arpanet runs with `master` and `slave` nodes.
+The variables you should set in your environment before running the arpanet container:
 
-The master nodes are etcd servers and the slave
-
-## environment
-
-The variables you should set in your environment before running the arpanet master or slave:
-
-#### `HOSTNAME`
+##### `HOSTNAME`
 
 Make sure the hostname of the machine is set correctly and is different to other hostnames on your arpanet.
 
@@ -58,7 +64,7 @@ Make sure the hostname of the machine is set correctly and is different to other
 $ export HOSTNAME=host1
 ```
 
-#### `ARPANET_IP`
+##### `ARPANET_IP`
 
 The IP address of the interface to use for cross host communication.
 
@@ -68,15 +74,23 @@ This should be the IP of the private network of each host.
 $ export ARPANET_IP=192.168.8.120
 ```
 
-#### `ARPANET_MASTERS`
+#### 5. setup docker
 
-A comma delimited list of at least 2 of the arpanet masters on the network (the rest be found in the mesh)
+Run the setup command as root - it will configure docker DNS and bind it to the ARPANET_IP tcp endpoint (as well as the UNIX socket):
 
 ```bash
-$ export ARPANET_MASTERS=192.168.8.120,192.168.8.121,192.168.8.122
+$ sudo $(arpanet setup)
 ```
 
-#### misc
+#### 6. pull service images
+
+Finally pull the docker images for the various services:
+
+```bash
+$ arpanet pull
+```
+
+## config
 
 there are other optional variables that control arpanet behaviour:
 
@@ -85,18 +99,32 @@ there are other optional variables that control arpanet behaviour:
  * ETCD_PORT - the TCP port etcd client connection should listen on (4001)
  * ETCD_PEERPORT - the TCP port etcd peer connection should listen on (7001)
  * ETCD_PATH - the base path in etcd arpanet will keep state (/arpanet)
- * ETCD_NAME - the name of the etcd container (arpanet_etcd)
+ * CADVISOR_PORT - the port to expose for the cadvisor api (8080)
+
+You can control the images used by arpanet services using the following variables:
+
+ * CONSUL_IMAGE (progrium/docker-consul)
+ * CADVISOR_IMAGE (google/cadvisor)
+ * REGISTRATOR_IMAGE (progrium/registrator)
+ * AMBASSADORD_IMAGE (binocarlos/ambassadord) - will change to progrium
+ * FLEETSTREET_IMAGE (binocarlos/fleetstreet)
+
+You can control the names of the launched services using the following variables:
+
+ * CONSUL_NAME - the name of the etcd container (arpanet_etcd)
  * AMBASSADOR_NAME - the name of the ambassador container (arpanet_backends)
  * REGISTRATOR_NAME - the name of the registrator container (arpanet_registrator)
  * FLEETSTREET_NAME - the name of the fleetstreet container (arpanet_fleetstreet)
  * CADVISOR_NAME - the name of the cadvisor container (arpanet_cadvisor)
- * CADVISOR_PORT - the port to expose for the cadvisor api (8080)
+ 
 
 arpanet will source these variables from:
 
 ```bash
 ~/.arpanetrc
 ```
+
+## run
 
 ## master
 

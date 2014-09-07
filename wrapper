@@ -1,2 +1,36 @@
 #!/bin/bash
-echo "hello"
+
+vars=(
+	ARPANET_IP
+	HOSTNAME
+	REGISTRATOR_IMAGE
+	FLEETSTREET_IMAGE
+	CADVISOR_IMAGE
+	CONSUL_IMAGE
+	AMBASSADORD_IMAGE
+	DOCKER_PORT
+	KV_PATH
+	CONSUL_NAME
+	AMBASSADOR_NAME
+	REGISTRATOR_NAME
+	FLEETSTREET_NAME
+	CADVISOR_NAME
+	CADVISOR_PORT
+)
+
+dockervars=""
+
+for i in "${vars[@]}"
+do
+	dockervars="$dockervars -e $i"
+done
+
+# if we are developing we want the script to mount into the container
+mountscript=""
+if [[ -z $ARPANET_DEV ]]; then
+	mountscript="-v /srv/projects/arpanet/arpanet:/bin/arpanet"
+fi
+
+echo $dockervars
+
+#docker run --rm -ti -h $HOSTNAME -v /var/run/docker.sock:/var/run/docker.sock -e ARPANET_IP -e HOSTNAME $mountscript binocarlos/arpanet $@

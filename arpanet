@@ -1,19 +1,15 @@
 #!/bin/bash
 
-if [ -f ~/.arpanetrc ]; then
-	source ~/.arpanetrc
-fi
-
-
 export REGISTRATOR_IMAGE=${REGISTRATOR_IMAGE:="progrium/registrator"}
 export FLEETSTREET_IMAGE=${FLEETSTREET_IMAGE:="binocarlos/fleetstreet"}
 export CADVISOR_IMAGE=${CADVISOR_IMAGE:="google/cadvisor"}
 export CONSUL_IMAGE=${ETCD_IMAGE:="progrium/docker-consul"}
+
 # change this back to progrium/ once builds are current there
 export AMBASSADORD_IMAGE=${AMBASSADORD_IMAGE:="binocarlos/ambassadord"}
 
 export DOCKER_PORT=${DOCKER_PORT:=2375}
-export KV_PATH=${ETCD_PATH:="/arpanet"}
+export KV_PATH=${KV_PATH:="/arpanet"}
 
 export CONSUL_NAME=${CONSUL_NAME:="arpanet_consul"}
 export AMBASSADOR_NAME=${AMBASSADOR_NAME:="arpanet_backends"}
@@ -24,34 +20,41 @@ export CADVISOR_PORT=${CADVISOR_PORT:=8085}
 
 # INSTALL
 check-environment(){
+	echoopen=""
+	echoclose=""
+	if [[ "$1" == "echo" ]]; then
+		echoopen="eval echo\""
+		echoclose="\""
+	fi
+
 	if [ -z $HOSTNAME ]; then
-		echo "HOSTNAME variable needed"
+		echo "$echoopen HOSTNAME variable needed $echoclose"
 		exit 1
 	fi
 	if [ -z $ARPANET_IP ]; then
-		echo "ARPANET_IP variable needed"
+		echo "$echoopen ARPANET_IP variable needed $echoclose"
 		exit 1
 	fi
 }
 
-configure-docker(){
+cmd-install(){
+check-environment
 cat <<EOF
 eval echo "DOCKER_OPTS='-H unix:///var/run/docker.sock -H tcp://$ARPANET_IP:$DOCKER_PORT --dns 172.17.42.1 --dns 8.8.8.8 --dns-search service.consul'" > /etc/default/docker && service docker restart
 EOF
 }
 
-install() {
-	check-environment
+cmd-pull() {
 	sleep 1
 	docker pull $REGISTRATOR_IMAGE
-	sleep 1
-	docker pull $FLEETSTREET_IMAGE
-	sleep 1
-	docker pull $CADVISOR_IMAGE
-	sleep 1
-	docker pull $CONSUL_IMAGE
-	sleep 1
-	docker pull $AMBASSADORD_IMAGE	
+	#sleep 1
+	#docker pull $FLEETSTREET_IMAGE
+	#sleep 1
+	#docker pull $CADVISOR_IMAGE
+	#sleep 1
+	#docker pull $CONSUL_IMAGE
+	#sleep 1
+	#docker pull $AMBASSADORD_IMAGE	
 }
 
 check-running(){
@@ -150,7 +153,8 @@ Usage: arpanet COMMAND [options]
 
 Commands:
 
-  install                               Install master or slave components
+  setup                                 Setup docker for use with arpanet
+  pull                                  Pull the required docker images
   start      (master|slave)             Start arpanet
   stop                                  Stop arpanet
 
@@ -160,6 +164,7 @@ EOF
 main() {
 	case "$1" in
 	install)            shift; cmd-install $@;;
+  pull)               shift; cmd-pull $@;;
 	start)              shift; cmd-start $@;;
 	stop)               shift; cmd-stop $@;;
 	*)                  cmd-help $@;;
