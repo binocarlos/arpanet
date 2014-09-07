@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # change ambassadord to progrium when updated
-export CONSUL_IMAGE=${ETCD_IMAGE:="progrium/docker-consul"}
+export CONSUL_IMAGE=${ETCD_IMAGE:="progrium/consul"}
 export CADVISOR_IMAGE=${CADVISOR_IMAGE:="google/cadvisor"}
 export AMBASSADORD_IMAGE=${AMBASSADORD_IMAGE:="binocarlos/ambassadord"}
 export REGISTRATOR_IMAGE=${REGISTRATOR_IMAGE:="progrium/registrator"}
@@ -41,16 +41,15 @@ cmd-opts(){
 }
 
 cmd-pull() {
+	docker pull $CONSUL_IMAGE
+	sleep 1
+	docker pull $CADVISOR_IMAGE
+	sleep 1
+	docker pull $AMBASSADORD_IMAGE
 	sleep 1
 	docker pull $REGISTRATOR_IMAGE
-	#sleep 1
-	#docker pull $FLEETSTREET_IMAGE
-	#sleep 1
-	#docker pull $CADVISOR_IMAGE
-	#sleep 1
-	#docker pull $CONSUL_IMAGE
-	#sleep 1
-	#docker pull $AMBASSADORD_IMAGE	
+	sleep 1
+	docker pull $FLEETSTREET_IMAGE
 }
 
 check-running(){
@@ -70,7 +69,7 @@ start-consul(){
 	bridge_ip=$(ip ro | awk '/^default/{print $3}')
 	consul_args=""
 
-	if [[ -n $mode ]]; then
+	if [[ -z $mode ]]; then
 		>&2 echo "usage: arpanet start boot|master|slave [JOINIP]"
 		exit 1
 	fi
@@ -80,7 +79,7 @@ start-consul(){
 			>&2 echo "boot mode does not take a JOINIP"
 			exit 1
 		fi
-		consul_args="-bootstrap-expect $CONSUL_EXPECT"
+		consul_args="-server -bootstrap-expect $CONSUL_EXPECT"
 	elif [[ "$mode" == "master" ]]; then
 		if [[ -n $joinip ]]; then
 			>&2 echo "master mode needs a JOINIP"
@@ -95,7 +94,7 @@ start-consul(){
 		consul_args="-join $join_ip"
 	fi
 
-	docker run --name $servicename -h $HOSTNAME \
+	docker run -d --name $servicename -h $HOSTNAME \
 		-v $CONSUL_DATA:/data \
 		-p $ARPANET_IP:8300:8300 \
 		-p $ARPANET_IP:8301:8301 \
@@ -161,12 +160,12 @@ start-fleetstreet(){
 cmd-start() {
 	check-environment
 	start-consul $@
-	#sleep 1
-	#start-ambassadord
-	#start-registrator
-	#start-cadvisor
-	#sleep 1
-	#start-fleetstreet
+	sleep 1
+	start-ambassadord
+	start-registrator
+	start-cadvisor
+	sleep 1
+	start-fleetstreet
 }
 
 cmd-stop() {

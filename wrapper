@@ -49,5 +49,5 @@ if [[ "$1" == "setup" ]]; then
 	mkdir -p $CONSUL_DATA
 	service docker restart
 else
-	docker run --rm -h $HOSTNAME -v /var/run/docker.sock:/var/run/docker.sock $dockervars $mountscript binocarlos/arpanet $@
+	docker run --rm -ti -h $HOSTNAME -v /var/run/docker.sock:/var/run/docker.sock $dockervars $mountscript binocarlos/arpanet $@
 fi
