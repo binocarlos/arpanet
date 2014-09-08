@@ -7,12 +7,12 @@ Auto linking multi-host docker cluster
 
 Arpanet is a wrapper around the following tools:
 
- * [docker](https://github.com/docker/docker) for running containers
- * [consul](https://github.com/hashicorp/consul) for service discovery
- * [cadvisor](https://github.com/google/cadvisor) for container metrics
- * [ambassadord](https://github.com/progrium/ambassadord) for auto tcp routing
- * [registrator](https://github.com/progrium/registrator) for announcing services
- * [fleetstreet](https://github.com/binocarlos/fleetstreet) for publishing container info
+ * [docker](https://github.com/docker/docker) - for running containers
+ * [consul](https://github.com/hashicorp/consul) - for service discovery
+ * [cadvisor](https://github.com/google/cadvisor) - for container metrics
+ * [ambassadord](https://github.com/progrium/ambassadord) - for auto tcp routing
+ * [registrator](https://github.com/progrium/registrator) - for announcing services to consul
+ * [fleetstreet](https://github.com/binocarlos/fleetstreet) - for publishing container env to consul
 
 It is an opinionated platform upon which you can create a Platform As A Service.
 
@@ -30,6 +30,7 @@ $ sudo chmod a+x /usr/local/bin/arpanet
 $ sudo -E arpanet setup
 $ arpanet pull
 ```
+
 ### run
 
 ```
