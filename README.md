@@ -7,20 +7,22 @@ Auto linking multi-host docker cluster
 
 Arpanet is a wrapper around the following tools:
 
- * [docker](https://github.com/docker/docker)
- * [consul](https://github.com/hashicorp/consul)
- * [cadvisor](https://github.com/google/cadvisor)
- * [ambassadord](https://github.com/progrium/ambassadord)
- * [registrator](https://github.com/progrium/registrator)
- * [fleetstreet](https://github.com/binocarlos/fleetstreet)
+ * [docker](https://github.com/docker/docker) for running containers
+ * [consul](https://github.com/hashicorp/consul) for service discovery
+ * [cadvisor](https://github.com/google/cadvisor) for container metrics
+ * [ambassadord](https://github.com/progrium/ambassadord) for auto tcp routing
+ * [registrator](https://github.com/progrium/registrator) for announcing services
+ * [fleetstreet](https://github.com/binocarlos/fleetstreet) for publishing container info
 
-## install
+It is an opinionated platform upon which you can create a Platform As A Service.
+
+## quickstart
 
 The quickstart list of commands:
 
-### quickstart install
+### install
 
-```
+```bash
 $ export ARPANET_IP=192.168.8.120
 $ curl -sSL https://get.docker.io/ubuntu/ | sudo sh
 $ sudo sh -c 'curl -L https://raw.githbusercontent.com/binocarlos/arpanet/v2.0.1/wrapper > /usr/local/bin/arpanet'
@@ -28,8 +30,20 @@ $ sudo chmod a+x /usr/local/bin/arpanet
 $ sudo -E arpanet setup
 $ arpanet pull
 ```
+### run
 
-### installation steps
+```
+Usage: arpanet COMMAND [options]
+
+Commands:
+
+  setup                                 Setup docker for use with arpanet
+  pull                                  Pull the required docker images
+  start boot|master|slave [JOINIP]      Start arpanet
+  stop                                  Stop arpanet
+```
+
+## installation
 
 #### 1. environment
 
@@ -126,26 +140,24 @@ $ docker run --rm \
 
 #### `arpanet setup`
 
-Echo's a command to run on the host that will configure docker to listen on the private network TCP socket and to hook up the consul DNS.
-
-This is designed to be run in a sub-shell as follows:
-
 ```bash
-$ sudo -E $(arpanet setup)
+$ sudo -E arpanet setup
 ```
 
-An example of what the setup command would print without wrapping a subshell:
+This should be run as root and will perform the following steps:
 
-```bash
-eval echo "DOCKER_OPTS='-H unix:///var/run/docker.sock \
-  -H tcp://192.168.8.120:2375 --dns 172.17.42.1 --dns 8.8.8.8 \
-  --dns-search service.consul'" > /etc/default/docker \
-  && service docker restart && mkdir -p /mnt/arpanet-consul
-```
+ * bind docker to listen on the the tcp://$ARPANET_IP interface
+ * connect the docker DNS resolver to consul
+ * create a host directory for the consul data volume
+ * restart docker
 
 #### `arpanet pull`
 
 This will pull the images used by arpanet services.
+
+```bash
+$ arpanet pull
+```
 
 #### `arpanet start boot|master|slave [JOINIP]`
 
@@ -157,15 +169,23 @@ There are 3 modes to boot a node:
  * master - used for other masters (consul server)
  * slave - used for other nodes (consul agent)
 
+```bash
+$ arpanet start master 192.168.8.120
+```
+
 #### `arpanet stop`
 
 Stop the arpanet containers.
 
+```bash
+$ arpanet stop
+```
+
 ## booting a cluster
 
-To boot a cluster of 5 nodes, with 3 servers:
+Boot a cluster of 5 nodes, with 3 server and 2 client nodes.
 
-First stash the ip of the first node:
+First stash the ip of the first node - we will 'join' the other nodes to here and the consul gossip protocol will catch up.
 
 ```bash
 $ export JOINIP=192.168.8.120

@@ -162,18 +162,28 @@ cmd-start() {
 	start-consul $@
 	sleep 1
 	start-ambassadord
+	sleep 1
 	start-registrator
+	sleep 1
 	start-cadvisor
 	sleep 1
 	start-fleetstreet
+	sleep 1
+}
+
+stop-service() {
+	echo "stop"
+	docker stop $1
+	echo "remove"
+	docker rm $1
 }
 
 cmd-stop() {
-	docker stop "$CADVISOR_NAME.$HOSTNAME" && docker rm "$CADVISOR_NAME.$HOSTNAME"
-	docker stop "$REGISTRATOR_NAME.$HOSTNAME" && docker rm "$REGISTRATOR_NAME.$HOSTNAME"
-	docker stop "$AMBASSADOR_NAME.$HOSTNAME" && docker rm "$AMBASSADOR_NAME.$HOSTNAME"
-	docker stop "$FLEETSTREET_NAME.$HOSTNAME" && docker rm "$FLEETSTREET_NAME.$HOSTNAME"
-	docker stop "$CONSUL_NAME.$HOSTNAME" && docker rm "$CONSUL_NAME.$HOSTNAME"
+	stop-service "$CADVISOR_NAME.$HOSTNAME"
+	stop-service "$REGISTRATOR_NAME.$HOSTNAME"
+	stop-service "$AMBASSADOR_NAME.$HOSTNAME"
+	stop-service "$FLEETSTREET_NAME.$HOSTNAME"
+	stop-service "$CONSUL_NAME.$HOSTNAME"
 }
 
 cmd-help() {
