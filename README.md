@@ -38,10 +38,12 @@ Usage: arpanet COMMAND [options]
 
 Commands:
 
-  setup                                 Setup docker for use with arpanet
-  pull                                  Pull the required docker images
-  start boot|master|slave [JOINIP]      Start arpanet
-  stop                                  Stop arpanet
+  setup                                     Setup docker for use with arpanet
+  pull                                      Pull the required docker images
+  start:consul boot|master|slave [JOINIP]   Start the consul service
+  start:stack                               Start the other services
+  stop                                      Stop arpanet
+  help                                      Show this message
 ```
 
 ## installation
@@ -117,10 +119,12 @@ Usage: arpanet COMMAND [options]
 
 Commands:
 
-  setup                                 Setup docker for use with arpanet
-  pull                                  Pull the required docker images
-  start boot|master|slave [JOINIP]      Start arpanet
-  stop                                  Stop arpanet
+  setup                                     Setup docker for use with arpanet
+  pull                                      Pull the required docker images
+  start:consul boot|master|slave [JOINIP]   Start the consul service
+  start:stack                               Start the other services
+  stop                                      Stop arpanet
+  help                                      Show this message
 ```
 
 The arpanet script runs in a docker container - this means the docker socket must be mounted as a volume each time we run.
@@ -160,9 +164,9 @@ This will pull the images used by arpanet services.
 $ arpanet pull
 ```
 
-#### `arpanet start boot|master|slave [JOINIP]`
+#### `arpanet start:consul boot|master|slave [JOINIP]`
 
-Start the arpanet containers on this host.
+Start the consul container on this host.
 
 There are 3 modes to boot a node:
 
@@ -171,8 +175,16 @@ There are 3 modes to boot a node:
  * slave - used for other nodes (consul agent)
 
 ```bash
-$ arpanet start master 192.168.8.120
+$ arpanet start:consul master 192.168.8.120
 ```
+
+#### `arpanet start:services`
+
+Before you start the arpanet services the consul cluster must be booted and operational.
+
+This means you must run the `start:consul` command on all 3 (or 5 etc) master nodes before running `arpanet start:services` on any of them.
+
+If you are adding a slave node then the `start:services` command can be run directly after the `start:consul` command (because the consul cluster is already up and running).
 
 #### `arpanet stop`
 
@@ -195,21 +207,31 @@ $ export JOINIP=192.168.8.120
 Then boot the first node:
 
 ```bash
-$ arpanet start boot
+$ arpanet start:consul boot
 ```
 
 Now - boot the other 2 masters:
 
-```
-$ ssh node2 arpanet start master $JOINIP
-$ ssh node3 arpanet start master $JOINIP
+```bash
+$ ssh node2 arpanet start:consul master $JOINIP
+$ ssh node3 arpanet start:consul master $JOINIP
 ```
 
-Then finally the 2 other slaves:
+When all 3 masters are started - it means we have an operational consul cluster and can start the rest of the arpanet service stack on the nodes:
 
+```bash
+$ arpanet start:services
+$ ssh node2 arpanet start:services
+$ ssh node3 arpanet start:services
 ```
-$ ssh node4 arpanet start slave $JOINIP
-$ ssh node5 arpanet start slave $JOINIP
+
+Now we can setup further slaves:
+
+```bash
+$ ssh node4 arpanet start:consul slave $JOINIP
+$ ssh node4 arpanet start:services
+$ ssh node5 arpanet start:consul slave $JOINIP
+$ ssh node5 arpanet start:services
 ```
 
 ## config

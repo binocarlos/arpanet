@@ -61,51 +61,6 @@ check-running(){
 	fi
 }
 
-start-consul(){
-	local mode="$1"; shift
-	local joinip="$1"; shift
-	local servicename="$CONSUL_NAME.$HOSTNAME"
-	check-running $servicename
-	bridge_ip=$(ip ro | awk '/^default/{print $3}')
-	consul_args=""
-
-	if [[ -z $mode ]]; then
-		>&2 echo "usage: arpanet start boot|master|slave [JOINIP]"
-		exit 1
-	fi
-
-	if [[ "$mode" == "boot" ]]; then
-		if [[ -z $joinip ]]; then
-			>&2 echo "boot mode does not take a JOINIP"
-			exit 1
-		fi
-		consul_args="-server -bootstrap-expect $CONSUL_EXPECT"
-	elif [[ "$mode" == "master" ]]; then
-		if [[ -z $joinip ]]; then
-			>&2 echo "master mode needs a JOINIP"
-			exit 1
-		fi
-		consul_args="-server -join $joinip"
-	else
-		if [[ -z $joinip ]]; then
-			>&2 echo "slave mode needs a JOINIP"
-			exit 1
-		fi
-		consul_args="-join $joinip"
-	fi
-
-	docker run -d --name $servicename -h $HOSTNAME \
-		-v $CONSUL_DATA:/data \
-		-p $ARPANET_IP:8300:8300 \
-		-p $ARPANET_IP:8301:8301 \
-		-p $ARPANET_IP:8301:8301/udp \
-		-p $ARPANET_IP:8302:8302 \
-		-p $ARPANET_IP:8302:8302/udp \
-		-p $ARPANET_IP:8400:8400 \
-		-p $ARPANET_IP:$CONSUL_PORT:8500 \
-		-p $bridge_ip:53:53/udp \
-		$CONSUL_IMAGE -advertise $ARPANET_IP $consul_args
-}
 
 start-cadvisor(){
 	local servicename="$CADVISOR_NAME.$HOSTNAME"
@@ -157,10 +112,7 @@ start-fleetstreet(){
     -h $HOSTNAME $FLEETSTREET_IMAGE -ip=$ARPANET_IP -ensure consul://$ARPANET_IP:$CONSUL_PORT$CONSUL_KV_PATH/containers
 }
 
-cmd-start() {
-	check-environment
-	start-consul $@
-	sleep 1
+cmd-start-stack() {
 	start-ambassadord
 	sleep 1
 	start-registrator
@@ -169,6 +121,55 @@ cmd-start() {
 	sleep 1
 	start-fleetstreet
 	sleep 1
+}
+
+cmd-start-consul(){
+	local mode="$1"; shift
+	local joinip="$1"; shift
+	local servicename="$CONSUL_NAME.$HOSTNAME"
+	check-running $servicename
+	bridge_ip=$(ip ro | awk '/^default/{print $3}')
+	consul_args=""
+
+	if [[ -z $mode ]]; then
+		>&2 echo "usage: arpanet start boot|master|slave [JOINIP]"
+		exit 1
+	fi
+
+	if [[ "$mode" == "boot" ]]; then
+		if [[ -n $joinip ]]; then
+			>&2 echo "boot mode does not take a JOINIP"
+			exit 1
+		fi
+		consul_args="-server -bootstrap-expect $CONSUL_EXPECT"
+	elif [[ "$mode" == "master" ]]; then
+		if [[ -z $joinip ]]; then
+			>&2 echo "master mode needs a JOINIP"
+			exit 1
+		fi
+		consul_args="-server -join $joinip"
+	elif [[ "$mode" == "slave" ]]; then
+		if [[ -z $joinip ]]; then
+			>&2 echo "slave mode needs a JOINIP"
+			exit 1
+		fi
+		consul_args="-join $joinip"
+	else
+		>&2 echo "unknown mode: $mode"
+		exit 1
+	fi
+
+	docker run -d --name $servicename -h $HOSTNAME \
+		-v $CONSUL_DATA:/data \
+		-p $ARPANET_IP:8300:8300 \
+		-p $ARPANET_IP:8301:8301 \
+		-p $ARPANET_IP:8301:8301/udp \
+		-p $ARPANET_IP:8302:8302 \
+		-p $ARPANET_IP:8302:8302/udp \
+		-p $ARPANET_IP:8400:8400 \
+		-p $ARPANET_IP:$CONSUL_PORT:8500 \
+		-p $bridge_ip:53:53/udp \
+		$CONSUL_IMAGE -advertise $ARPANET_IP $consul_args
 }
 
 stop-service() {
@@ -193,11 +194,12 @@ Usage: arpanet COMMAND [options]
 
 Commands:
 
-  setup                                 Setup docker for use with arpanet
-  pull                                  Pull the required docker images
-  start boot|master|slave [JOINIP]      Start arpanet
-  stop                                  Stop arpanet
-  help                                  Show this message
+  setup                                     Setup docker for use with arpanet
+  pull                                      Pull the required docker images
+  start:consul boot|master|slave [JOINIP]   Start the consul service
+  start:stack                               Start the other services
+  stop                                      Stop arpanet
+  help                                      Show this message
 
 EOF
 }
@@ -206,7 +208,8 @@ main() {
 	case "$1" in
 	opts)               shift; cmd-opts $@;;
   pull)               shift; cmd-pull $@;;
-	start)              shift; cmd-start $@;;
+	start:consul)       shift; cmd-start-consul $@;;
+  start:stack)        shift; cmd-start-stack $@;;
 	stop)               shift; cmd-stop $@;;
 	*)                  cmd-help $@;;
 	esac
