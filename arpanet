@@ -75,19 +75,19 @@ start-consul(){
 	fi
 
 	if [[ "$mode" == "boot" ]]; then
-		if [[ -n $joinip ]]; then
+		if [[ -z $joinip ]]; then
 			>&2 echo "boot mode does not take a JOINIP"
 			exit 1
 		fi
 		consul_args="-server -bootstrap-expect $CONSUL_EXPECT"
 	elif [[ "$mode" == "master" ]]; then
-		if [[ -n $joinip ]]; then
+		if [[ -z $joinip ]]; then
 			>&2 echo "master mode needs a JOINIP"
 			exit 1
 		fi
 		consul_args="-server -join $join_ip"
 	else
-		if [[ -n $joinip ]]; then
+		if [[ -z $joinip ]]; then
 			>&2 echo "slave mode needs a JOINIP"
 			exit 1
 		fi
