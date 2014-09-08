@@ -85,13 +85,13 @@ start-consul(){
 			>&2 echo "master mode needs a JOINIP"
 			exit 1
 		fi
-		consul_args="-server -join $join_ip"
+		consul_args="-server -join $joinip"
 	else
 		if [[ -z $joinip ]]; then
 			>&2 echo "slave mode needs a JOINIP"
 			exit 1
 		fi
-		consul_args="-join $join_ip"
+		consul_args="-join $joinip"
 	fi
 
 	docker run -d --name $servicename -h $HOSTNAME \
