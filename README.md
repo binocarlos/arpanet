@@ -164,9 +164,38 @@ Commands:
 
     Stop arpanet
 
-  consul
+  info
 
-    Run the consul cli against the local node
+    Show info about this arpanet node
+
+  kv <command> [OPTIONS...]
+
+    CLI for the consul key/value store
+
+    kv info <key>
+
+      Load the full JSON of key
+
+    kv get <key>
+
+      Get the value of key
+
+    kv set <key> <value>
+
+      Set the value of key
+
+    kv del <key> [value]
+
+      Delete key (check value optional)
+
+    kv ls <key>
+
+      List keys
+
+  consul <command> [OPTIONS...]
+
+    Run the consul cli command against the local agent
+    The -rpc-addr and -http-addr are automatically completed
 
   help
 
@@ -246,6 +275,26 @@ Stop the arpanet containers.
 $ arpanet stop
 ```
 
+#### `arpanet info`
+
+Print information about this node
+
+#### `arpanet kv <command> [OPTIONS...]`
+
+A CLI tool to read and write to the consul key value store.
+
+Commands:
+
+#### `arpanet kv info <key>`
+
+#### `arpanet kv get <key>`
+
+#### `arpanet kv get <key>`
+
+#### `arpanet kv del <key>`
+
+#### `arpanet kv ls <key>`
+
 ## booting a cluster
 
 Boot a cluster of 5 nodes, with 3 server and 2 client nodes.
@@ -284,6 +333,12 @@ $ ssh node4 arpanet start:consul client $JOINIP
 $ ssh node4 arpanet start:stack
 $ ssh node5 arpanet start:consul client $JOINIP
 $ ssh node5 arpanet start:stack
+```
+
+We can now use `consul members` to check our cluster:
+
+```bash
+$ arpanet consul members
 ```
 
 ## config
