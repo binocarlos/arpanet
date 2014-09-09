@@ -3,7 +3,7 @@ arpanet
 
 Auto linking multi-host docker cluster
 
-![PDP-10](https://github.com/binocarlos/arpanet/raw/server/pdp-10.jpg)
+![PDP-10](https://github.com/binocarlos/arpanet/raw/master/pdp-10.jpg)
 
 Arpanet is a wrapper around the following tools:
 
