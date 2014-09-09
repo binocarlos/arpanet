@@ -319,11 +319,14 @@ If you are running arpanet manually then pass these variables to docker using `-
 
 ## security
 
-At present $ARPANET_IP is expected to reside on a private network.
+A basic arpanet will use the private network of a single data centre.
 
-It is recommended that you use iptables to secure access between arpanet nodes preventing other servers on the private network gaining access to your nodes.
+Securing the network is left up to the user to allow for multiple approaches - for example:
 
-Future versions of arpanet will include TLS encryption and so enable consul to bind to all ports which opens up support for multi-data centres.
+ * use iptables to block unknown hosts
+ * use a VPN solution to encrypt traffic between hsots
+
+Future versions of arpanet will allow for consul TLS encryption meaning it can bind onto public Internet ports and use the multi data-centre feature securely.
 
 ## wishlist
 
