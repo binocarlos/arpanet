@@ -132,7 +132,7 @@ cmd-start-consul(){
 	consul_args=""
 
 	if [[ -z $mode ]]; then
-		>&2 echo "usage: arpanet start boot|master|slave [JOINIP]"
+		>&2 echo "usage: arpanet start boot|server|slave [JOINIP]"
 		exit 1
 	fi
 
@@ -142,15 +142,15 @@ cmd-start-consul(){
 			exit 1
 		fi
 		consul_args="-server -bootstrap-expect $CONSUL_EXPECT"
-	elif [[ "$mode" == "master" ]]; then
+	elif [[ "$mode" == "server" ]]; then
 		if [[ -z $joinip ]]; then
-			>&2 echo "master mode needs a JOINIP"
+			>&2 echo "server mode needs a JOINIP"
 			exit 1
 		fi
 		consul_args="-server -join $joinip"
-	elif [[ "$mode" == "slave" ]]; then
+	elif [[ "$mode" == "client" ]]; then
 		if [[ -z $joinip ]]; then
-			>&2 echo "slave mode needs a JOINIP"
+			>&2 echo "client mode needs a JOINIP"
 			exit 1
 		fi
 		consul_args="-join $joinip"
@@ -190,16 +190,45 @@ cmd-stop() {
 cmd-help() {
 cat <<EOF
 
-Usage: arpanet COMMAND [options]
+Usage: arpanet COMMAND [OPTIONS...]
 
 Commands:
 
-  setup                                     Setup docker for use with arpanet
-  pull                                      Pull the required docker images
-  start:consul boot|master|slave [JOINIP]   Start the consul service
-  start:stack                               Start the other services
-  stop                                      Stop arpanet
-  help                                      Show this message
+  arpanet setup
+
+    Setup docker for use with arpanet
+
+  arpanet pull
+
+    Pull the required docker images
+
+  start:consul boot|server|client [JOINIP] [CONSUL_OPTS...]
+
+    Start the consul service
+
+    'boot' means the first server
+    'server' means consul server nodes
+    'client' means consul client nodes
+
+    if in server or client mode - JOINIP is the ip of one other node in the cluster
+
+    CONSUL_OPTS (i.e. any argument after JOINIP) will be passed to the consul server
+
+  start:stack
+
+    Start the other services
+
+  stop
+
+    Stop arpanet
+
+  consul
+
+    Run the consul cli against the local node
+
+  help
+
+    Show this message
 
 EOF
 }

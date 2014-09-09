@@ -3,7 +3,7 @@ arpanet
 
 Auto linking multi-host docker cluster
 
-![PDP-10](https://github.com/binocarlos/arpanet/raw/master/pdp-10.jpg)
+![PDP-10](https://github.com/binocarlos/arpanet/raw/server/pdp-10.jpg)
 
 Arpanet is a wrapper around the following tools:
 
@@ -22,6 +22,8 @@ The quickstart list of commands:
 
 ### install
 
+On each machine that is part of the cluster:
+
 ```bash
 $ export ARPANET_IP=192.168.8.120
 $ curl -sSL https://get.docker.io/ubuntu/ | sudo sh
@@ -33,17 +35,32 @@ $ arpanet pull
 
 ### run
 
+On the first machine (192.168.8.120):
+
 ```
-Usage: arpanet COMMAND [options]
+$ arpanet start:consul boot
+```
 
-Commands:
+On the other 2 'server' nodes:
 
-  setup                                     Setup docker for use with arpanet
-  pull                                      Pull the required docker images
-  start:consul boot|master|slave [JOINIP]   Start the consul service
-  start:stack                               Start the other services
-  stop                                      Stop arpanet
-  help                                      Show this message
+```
+$ ssh node2 arpanet start:consul server 192.168.8.120
+$ ssh node3 arpanet start:consul server 192.168.8.120
+```
+
+Then start the service stack on all 3 servers:
+
+```
+$ arpanet start:stack
+$ ssh node2 arpanet start:stack
+$ ssh node3 arpanet start:stack
+```
+
+Now we can join more nodes in consul client mode:
+
+```
+$ ssh node4 arpanet start:consul client 192.168.8.120
+$ ssh node4 arpanet start:stack
 ```
 
 ## installation
@@ -115,16 +132,45 @@ Everything is now installed - you can `arpanet start` and `arpanet stop`
 ## run
 
 ```
-Usage: arpanet COMMAND [options]
+Usage: arpanet COMMAND [OPTIONS...]
 
 Commands:
 
-  setup                                     Setup docker for use with arpanet
-  pull                                      Pull the required docker images
-  start:consul boot|master|slave [JOINIP]   Start the consul service
-  start:stack                               Start the other services
-  stop                                      Stop arpanet
-  help                                      Show this message
+  arpanet setup
+
+    Setup docker for use with arpanet
+
+  arpanet pull
+
+    Pull the required docker images
+
+  start:consul boot|server|client [JOINIP] [CONSUL_OPTS...]
+
+    Start the consul service
+
+    'boot' means the first server
+    'server' means consul server nodes
+    'client' means consul client nodes
+
+    if in server or client mode - JOINIP is the ip of one other node in the cluster
+
+    CONSUL_OPTS (i.e. any argument after JOINIP) will be passed to the consul server
+
+  start:stack
+
+    Start the other services
+
+  stop
+
+    Stop arpanet
+
+  consul
+
+    Run the consul cli against the local node
+
+  help
+
+    Show this message
 ```
 
 The arpanet script runs in a docker container - this means the docker socket must be mounted as a volume each time we run.
@@ -164,27 +210,27 @@ This will pull the images used by arpanet services.
 $ arpanet pull
 ```
 
-#### `arpanet start:consul boot|master|slave [JOINIP]`
+#### `arpanet start:consul boot|server|client [JOINIP]`
 
 Start the consul container on this host.
 
 There are 3 modes to boot a node:
 
  * boot - used for the very first node
- * master - used for other masters (consul server)
- * slave - used for other nodes (consul agent)
+ * server - used for other servers (consul server)
+ * client - used for other nodes (consul agent)
 
 ```bash
-$ arpanet start:consul master 192.168.8.120
+$ arpanet start:consul server 192.168.8.120
 ```
 
-#### `arpanet start:services`
+#### `arpanet start:stack`
 
 Before you start the arpanet services the consul cluster must be booted and operational.
 
-This means you must run the `start:consul` command on all 3 (or 5 etc) master nodes before running `arpanet start:services` on any of them.
+This means you must run the `start:consul` command on all 3 (or 5 etc) server nodes before running `arpanet start:stack` on any of them.
 
-If you are adding a slave node then the `start:services` command can be run directly after the `start:consul` command (because the consul cluster is already up and running).
+If you are adding a client node then the `start:stack` command can be run directly after the `start:consul` command (because the consul cluster is already up and running).
 
 #### `arpanet stop`
 
@@ -210,28 +256,28 @@ Then boot the first node:
 $ arpanet start:consul boot
 ```
 
-Now - boot the other 2 masters:
+Now - boot the other 2 servers:
 
 ```bash
-$ ssh node2 arpanet start:consul master $JOINIP
-$ ssh node3 arpanet start:consul master $JOINIP
+$ ssh node2 arpanet start:consul server $JOINIP
+$ ssh node3 arpanet start:consul server $JOINIP
 ```
 
-When all 3 masters are started - it means we have an operational consul cluster and can start the rest of the arpanet service stack on the nodes:
+When all 3 servers are started - it means we have an operational consul cluster and can start the rest of the arpanet service stack on the nodes:
 
 ```bash
-$ arpanet start:services
-$ ssh node2 arpanet start:services
-$ ssh node3 arpanet start:services
+$ arpanet start:stack
+$ ssh node2 arpanet start:stack
+$ ssh node3 arpanet start:stack
 ```
 
-Now we can setup further slaves:
+Now we can setup further clients:
 
 ```bash
-$ ssh node4 arpanet start:consul slave $JOINIP
-$ ssh node4 arpanet start:services
-$ ssh node5 arpanet start:consul slave $JOINIP
-$ ssh node5 arpanet start:services
+$ ssh node4 arpanet start:consul client $JOINIP
+$ ssh node4 arpanet start:stack
+$ ssh node5 arpanet start:consul client $JOINIP
+$ ssh node5 arpanet start:stack
 ```
 
 ## config
