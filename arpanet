@@ -15,7 +15,8 @@ export FLEETSTREET_NAME=${FLEETSTREET_NAME:="arpanet_fleetstreet"}
 
 export DOCKER_PORT=${DOCKER_PORT:=2375}
 export CADVISOR_PORT=${CADVISOR_PORT:=8080}
-export CONSUL_PORT=${CONSUL_PORT:=8500}
+export CONSUL_HTTP_PORT=${CONSUL_HTTP_PORT:=8500}
+export CONSUL_RPC_PORT=${CONSUL_RPC_PORT:=8400}
 export CONSUL_EXPECT=${CONSUL_EXPECT:=3}
 export CONSUL_DATA=${CONSUL_DATA:=/mnt/arpanet-consul}
 export CONSUL_KV_PATH=${CONSUL_KV_PATH:=/arpanet}
@@ -82,7 +83,7 @@ start-registrator(){
 		--name "$servicename" \
 		-e "FLEETSTREET_NAME=$servicename" \
     -v /var/run/docker.sock:/tmp/docker.sock \
-    -h $HOSTNAME $REGISTRATOR_IMAGE -ip=$ARPANET_IP consul://$ARPANET_IP:$CONSUL_PORT
+    -h $HOSTNAME $REGISTRATOR_IMAGE -ip=$ARPANET_IP consul://$ARPANET_IP:$CONSUL_HTTP_PORT
 }
 
 
@@ -109,7 +110,7 @@ start-fleetstreet(){
 		--name "$servicename" \
 		-e "FLEETSTREET_NAME=$servicename" \
     -v /var/run/docker.sock:/var/run/docker.sock \
-    -h $HOSTNAME $FLEETSTREET_IMAGE -ip=$ARPANET_IP -ensure consul://$ARPANET_IP:$CONSUL_PORT$CONSUL_KV_PATH/containers
+    -h $HOSTNAME $FLEETSTREET_IMAGE -ip=$ARPANET_IP -ensure consul://$ARPANET_IP:$CONSUL_HTTP_PORT$CONSUL_KV_PATH/containers
 }
 
 cmd-start-stack() {
@@ -166,8 +167,8 @@ cmd-start-consul(){
 		-p $ARPANET_IP:8301:8301/udp \
 		-p $ARPANET_IP:8302:8302 \
 		-p $ARPANET_IP:8302:8302/udp \
-		-p $ARPANET_IP:8400:8400 \
-		-p $ARPANET_IP:$CONSUL_PORT:8500 \
+		-p $ARPANET_IP:$CONSUL_RPC_PORT:8400 \
+		-p $ARPANET_IP:$CONSUL_HTTP_PORT:8500 \
 		-p $bridge_ip:53:53/udp \
 		$CONSUL_IMAGE -advertise $ARPANET_IP $consul_args
 }
@@ -196,7 +197,7 @@ EOF
 
 cmd-kv() {
 	check-environment
-	local consul_endpoint="$ARPANET_IP:$CONSUL_PORT"
+	local consul_endpoint="$ARPANET_IP:$CONSUL_HTTP_PORT"
 	local path="$consul_endpoint/v1/kv/$2"
 	path=`echo $path | sed 's/\/\/*/\//g'`
 	path=`echo $path | sed 's/\/$//'`
@@ -205,7 +206,9 @@ cmd-kv() {
 			curl -s "$path" | jq -r .[]
 			;;
 		get)
-			curl -s "$path" | jq -r .[].Value | base64 -d | sed 's/$/\n/'
+			curl -s "$path" | jq -r .[].Value | base64 -d
+			# we are using a different base64 binary and so this sed not needed
+			# | sed 's/$/\n/'
 			;;
 		set)
 			curl -s -X PUT -d "$3" "$path" > /dev/null
