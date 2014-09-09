@@ -187,6 +187,30 @@ cmd-stop() {
 	stop-service "$CONSUL_NAME.$HOSTNAME"
 }
 
+cmd-kv() {
+	case "$1" in
+		info)
+			curl -s "$CONSUL/v1/kv/$2" | jq -r .[]
+			;;
+		get)
+			curl -s "$CONSUL/v1/kv/$2" | jq -r .[].Value | base64 -d | sed 's/$/\n/'
+			;;
+		set)
+			curl -s -X PUT -d "$3" "$CONSUL/v1/kv/$2" > /dev/null
+			;;
+		del)
+			curl -s -X DELETE -d "$3" "$CONSUL/v1/kv/$2" > /dev/null
+			;;
+		ls)
+			if [[ "$2" == "" ]]; then
+				curl -s "$CONSUL/v1/kv/?keys" | jq -r .[]
+			else
+				curl -s "$CONSUL/v1/kv/$2/?keys" | jq -r .[] | sed "s|$2/||"
+			fi
+			;;
+	esac
+}
+
 cmd-help() {
 cat <<EOF
 
@@ -222,9 +246,34 @@ Commands:
 
     Stop arpanet
 
-  consul
+  kv <command> [OPTIONS...]
 
-    Run the consul cli against the local node
+  	CLI for the consul key/value store
+
+    kv info <key>
+
+      Load the full JSON of key
+
+    kv get <key>
+
+    	Get the value of key
+
+    kv set <key> <value>
+
+    	Set the value of key
+
+    kv del <key> [value]
+
+    	Delete key (check value optional)
+
+    kv ls <key>
+
+    	List keys
+
+  consul <command> [OPTIONS...]
+
+    Run the consul cli command against the local agent
+    The -rpc-addr and -http-addr are automatically completed
 
   help
 
