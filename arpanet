@@ -236,7 +236,7 @@ cmd-kv() {
 			curl -s -X PUT -d "$3" "$path" > /dev/null
 			;;
 		del)
-			curl -s -X DELETE -d "$3" "$path" > /dev/null
+			curl -s -X DELETE "$path" > /dev/null
 			;;
 		ls)
 			if [[ "$2" == "" ]]; then

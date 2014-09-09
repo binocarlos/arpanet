@@ -222,6 +222,12 @@ Commands:
 
 #### `arpanet kv del <key>`
 
+To delete a key recursively:
+
+```bash
+$ arpanet kv del folder/a?recurse
+```
+
 #### `arpanet kv ls <key>`
 
 ## booting a cluster
