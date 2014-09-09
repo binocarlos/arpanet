@@ -23,11 +23,11 @@ export CONSUL_KV_PATH=${CONSUL_KV_PATH:=/arpanet}
 # INSTALL
 check-environment(){
 	if [ -z $HOSTNAME ]; then
-		echo "HOSTNAME variable needed"
+		>&2 echo "HOSTNAME variable needed"
 		exit 1
 	fi
 	if [ -z $ARPANET_IP ]; then
-		echo "ARPANET_IP variable needed"
+		>&2 echo "ARPANET_IP variable needed"
 		exit 1
 	fi
 }
@@ -56,7 +56,7 @@ check-running(){
 	checkfor="$1"; shift
 	running=$(docker ps | grep $checkfor)
 	if [ -n "$running" ]; then
-		echo "$1 is already running"
+		>&2 echo "$1 is already running"
 		exit 1
 	fi
 }
@@ -187,25 +187,44 @@ cmd-stop() {
 	stop-service "$CONSUL_NAME.$HOSTNAME"
 }
 
+cmd-info() {
+	cat <<EOF
+hostname:      $HOSTNAME
+IP:            $ARPANET_IP
+EOF
+}
+
 cmd-kv() {
+	check-environment
+	local consul_endpoint="$ARPANET_IP:$CONSUL_PORT"
+	local path="$consul_endpoint/v1/kv/$2"
+	path=`echo $path | sed 's/\/\/*/\//g'`
+	path=`echo $path | sed 's/\/$//'`
 	case "$1" in
 		info)
-			curl -s "$CONSUL/v1/kv/$2" | jq -r .[]
+			curl -s "$path" | jq -r .[]
 			;;
 		get)
-			curl -s "$CONSUL/v1/kv/$2" | jq -r .[].Value | base64 -d | sed 's/$/\n/'
+			curl -s "$path" | jq -r .[].Value | base64 -d | sed 's/$/\n/'
 			;;
 		set)
-			curl -s -X PUT -d "$3" "$CONSUL/v1/kv/$2" > /dev/null
+			curl -s -X PUT -d "$3" "$path" > /dev/null
 			;;
 		del)
-			curl -s -X DELETE -d "$3" "$CONSUL/v1/kv/$2" > /dev/null
+			curl -s -X DELETE -d "$3" "$path" > /dev/null
 			;;
 		ls)
 			if [[ "$2" == "" ]]; then
-				curl -s "$CONSUL/v1/kv/?keys" | jq -r .[]
+				curl -s "$path/?keys" | jq -r .[]
 			else
-				curl -s "$CONSUL/v1/kv/$2/?keys" | jq -r .[] | sed "s|$2/||"
+				curl -s "$path/?keys" | jq -r .[] | sed "s|$2/||"
+			fi
+			;;
+		*)
+			if [[ -z "$1" ]]; then
+				>&2 echo "usage: consul kv <command>"
+			else
+				>&2 echo "unknown command $1"
 			fi
 			;;
 	esac
@@ -245,6 +264,10 @@ Commands:
   stop
 
     Stop arpanet
+
+  info
+
+    Show info about this arpanet node
 
   kv <command> [OPTIONS...]
 
@@ -289,6 +312,8 @@ main() {
 	start:consul)       shift; cmd-start-consul $@;;
   start:stack)        shift; cmd-start-stack $@;;
 	stop)               shift; cmd-stop $@;;
+  info)               shift; cmd-info $@;;
+	kv)                 shift; cmd-kv $@;;
 	*)                  cmd-help $@;;
 	esac
 }
