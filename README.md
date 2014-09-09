@@ -37,20 +37,20 @@ $ arpanet pull
 
 On the first machine (192.168.8.120):
 
-```
+```bash
 $ arpanet start:consul boot
 ```
 
 On the other 2 'server' nodes:
 
-```
+```bash
 $ ssh node2 arpanet start:consul server 192.168.8.120
 $ ssh node3 arpanet start:consul server 192.168.8.120
 ```
 
 Then start the service stack on all 3 servers:
 
-```
+```bash
 $ arpanet start:stack
 $ ssh node2 arpanet start:stack
 $ ssh node3 arpanet start:stack
@@ -58,7 +58,7 @@ $ ssh node3 arpanet start:stack
 
 Now we can join more nodes in consul client mode:
 
-```
+```bash
 $ ssh node4 arpanet start:consul client 192.168.8.120
 $ ssh node4 arpanet start:stack
 ```
@@ -210,7 +210,7 @@ This will pull the images used by arpanet services.
 $ arpanet pull
 ```
 
-#### `arpanet start:consul boot|server|client [JOINIP]`
+#### `arpanet start:consul boot|server|client [JOINIP] [CONSUL_ARGS...]`
 
 Start the consul container on this host.
 
@@ -222,6 +222,12 @@ There are 3 modes to boot a node:
 
 ```bash
 $ arpanet start:consul server 192.168.8.120
+```
+
+You can pass consul arguments after the JOINIP (or after boot):
+
+```bash
+$ arpanet start:consul server 192.168.8.120 -node mycustomname -dc dc34
 ```
 
 #### `arpanet start:stack`
@@ -315,11 +321,9 @@ If you are running arpanet manually then pass these variables to docker using `-
 
 At present $ARPANET_IP is expected to reside on a private network.
 
-This prevents the multi data-centre approach for consul.
-
 It is recommended that you use iptables to secure access between arpanet nodes preventing other servers on the private network gaining access to your nodes.
 
-Future versions of arpanet will include TLS encryption and multi data-center support (as consul allows this).
+Future versions of arpanet will include TLS encryption and so enable consul to bind to all ports which opens up support for multi-data centres.
 
 ## wishlist
 
