@@ -299,24 +299,10 @@ Commands:
   	CLI for the consul key/value store
 
     kv info <key>
-
-      Load the full JSON of key
-
     kv get <key>
-
-    	Get the value of key
-
     kv set <key> <value>
-
-    	Set the value of key
-
-    kv del <key> [value]
-
-    	Delete key (check value optional)
-
+    kv del <key>
     kv ls <key>
-
-    	List keys
 
   consul <command> [OPTIONS...]
 
