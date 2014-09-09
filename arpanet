@@ -195,6 +195,28 @@ IP:            $ARPANET_IP
 EOF
 }
 
+cmd-consul() {
+	local cmd="$1"; shift
+	local consul_http_endpoint="-http-addr $ARPANET_IP:$CONSUL_HTTP_PORT"
+	local consul_rpc_endpoint="-rpc-addr $ARPANET_IP:$CONSUL_RPC_PORT"
+	local consul_endpoint=$consul_rpc_endpoint
+
+	if [[ "$cmd" == "" ]]; then
+		>&2 echo "usage: arpanet consul <command>"
+		exit 1
+	elif [[ "$cmd" == "event" ]]; then
+		consul_endpoint="$consul_http_endpoint"
+	elif [[ "$cmd" == "exec" ]]; then
+		consul_endpoint="$consul_http_endpoint"
+	elif [[ "$cmd" == "watch" ]]; then
+		consul_endpoint="$consul_http_endpoint"
+	elif [[ "$cmd" == "keygen" ]]; then
+		consul_endpoint=""
+	fi
+
+	docker run -t --rm --entrypoint "/bin/consul" $CONSUL_IMAGE $cmd $consul_endpoint $@
+}
+
 cmd-kv() {
 	check-environment
 	local consul_endpoint="$ARPANET_IP:$CONSUL_HTTP_PORT"
@@ -317,6 +339,7 @@ main() {
 	stop)               shift; cmd-stop $@;;
   info)               shift; cmd-info $@;;
 	kv)                 shift; cmd-kv $@;;
+	consul)							shift; cmd-consul $@;;
 	*)                  cmd-help $@;;
 	esac
 }
