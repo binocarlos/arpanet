@@ -331,6 +331,8 @@ Future versions of arpanet will allow for consul TLS encryption meaning it can b
 ## wishlist
 
  * TLS encryption between consul nodes & for docker server
+ * Make the service stack configurable so services become plugins
+ * Replicate the service stack via consul so we can manage services across the cluster
 
 ## big thank you to
 
