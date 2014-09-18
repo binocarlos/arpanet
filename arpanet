@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # change ambassadord to progrium when updated
-export CONSUL_IMAGE=${ETCD_IMAGE:="progrium/consul"}
+export CONSUL_IMAGE=${CONSUL_IMAGE:="progrium/consul"}
 export CADVISOR_IMAGE=${CADVISOR_IMAGE:="google/cadvisor"}
 export AMBASSADORD_IMAGE=${AMBASSADORD_IMAGE:="binocarlos/ambassadord"}
 export REGISTRATOR_IMAGE=${REGISTRATOR_IMAGE:="progrium/registrator"}
