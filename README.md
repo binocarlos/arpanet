@@ -27,7 +27,7 @@ On each machine that is part of the cluster:
 ```bash
 $ export ARPANET_IP=192.168.8.120
 $ curl -sSL https://get.docker.io/ubuntu/ | sudo sh
-$ sudo sh -c 'curl -L https://raw.githbusercontent.com/binocarlos/arpanet/v2.1.0/wrapper > /usr/local/bin/arpanet'
+$ sudo sh -c 'curl -L https://raw.githubusercontent.com/binocarlos/arpanet/master/wrapper > /usr/local/bin/arpanet'
 $ sudo chmod a+x /usr/local/bin/arpanet
 $ sudo -E arpanet setup
 $ arpanet pull
