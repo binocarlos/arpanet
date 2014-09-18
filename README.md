@@ -14,7 +14,7 @@ Arpanet is a wrapper around the following tools:
  * [registrator](https://github.com/progrium/registrator) - for announcing services to consul
  * [fleetstreet](https://github.com/binocarlos/fleetstreet) - for publishing container env to consul
 
-It is an opinionated platform upon which you can create a Platform As A Service.
+It is an opinionated layer upon which you can create a Platform As A Service.
 
 ## quickstart
 
